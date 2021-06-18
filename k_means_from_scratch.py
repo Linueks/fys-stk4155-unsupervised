@@ -177,7 +177,7 @@ def k_means(data, n_clusters=4, max_iterations=20):
 
 
 
-
+print("testing")
 
 if __name__=='__main__':
     np.random.seed(2021)
