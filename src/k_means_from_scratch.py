@@ -74,8 +74,28 @@ def generate_clustering_dataset(plotting=True, return_data=True):
 
 
 def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
-            debug_plot=False):
+            plot_results=False):
+    """
+    Naive implementation of the k-means clustering algorithm. A short summary of
+    the algorithm is as follows: we randomly initialize k centroids / means.
+    Then we assign, using the squared Euclidean distance, every data-point to a
+    cluster. We then update the position of the k centroids / means, and repeat
+    until convergence or we reach our desired maximum iterations. The method
+    returns the cluster assignments of our data-points and a sequence of
+    centroids.
 
+    Inputs:
+        data (np.array): with dimesions (dim x samples)
+        n_clusters (int): hyperparameter which depends on dataset
+        max_iterations (int): hyperparameter which depends on dataset
+        tolerance (float): convergence measure
+        plot_results (bool): activation flag for plotting
+
+    Returns:
+        cluster_labels (np.array): with dimension (samples)
+        centroid_list (list): list of centroids (np.array)
+                              with dimensions (dim x n_clusters) 
+    """
     dimensions, samples = data.shape
     # we need to (randomly) choose initial centroids
     centroids = np.zeros((dimensions, n_clusters))
@@ -115,7 +135,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
         cluster_labels[i] = smallest_row_index
 
-    if debug_plot:
+    if plot_results:
         fig, axs = plt.subplots(2, 2, figsize=(10, 6))
         axs[0, 0].scatter(data[0], data[1])
         axs[0, 0].set_title("Toy Model Dataset")
@@ -184,7 +204,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
 
         if centroid_difference < tolerance:
-            if debug_plot:
+            if plot_results:
                 unique_cluster_labels = np.unique(cluster_labels)
                 for i in unique_cluster_labels:
                     axs[1, 1].scatter(data[0, cluster_labels == i],
@@ -198,7 +218,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
             print(f'Converged at iteration: {iteration}')
             return cluster_labels, centroid_list
 
-    if debug_plot:
+    if plot_results:
         unique_cluster_labels = np.unique(cluster_labels)
         for i in unique_cluster_labels:
             axs[1, 1].scatter(data[0, cluster_labels == i],
