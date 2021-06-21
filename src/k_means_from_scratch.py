@@ -1,6 +1,9 @@
 """
 Program naively implementing k-means algorithm from scratch in Python
 Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content
+This file is the absolute 'simplest' implementation I could do of k-means.
+However, I feel some clarity is lost when not using functions whether custom
+or from various libraries.
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,11 +18,16 @@ def gaussian_points(dim=2, n_points=1000, mean_vector=np.array([0, 0]),
     with variable dimension, number of points, means in each direction
     (must match dim) and sample variance.
 
-    dim: float
-    n_points: int
-    mean_vector: np.array (where index 0 is x, index 1 is y and so on) must match dim
-    sample_variance: float
+    Inputs:
+        dim (int)
+        n_points (int)
+        mean_vector (np.array) (where index 0 is x, index 1 is y etc.)
+        sample_variance (float)
+
+    Returns:
+        data (np.array): with dimensions (dim x n_points)
     """
+
 
     mean_matrix = np.zeros(dim) + mean_vector
     covariance_matrix = np.eye(dim) * sample_variance
@@ -60,7 +68,8 @@ def generate_clustering_dataset(plotting=True, return_data=True):
 
 
     if return_data:
-        return data_x, data_y
+        data = np.array([data_x, data_y])
+        return data
 
 
 
@@ -175,7 +184,6 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
 
         if centroid_difference < tolerance:
-            print(f'Converged at iteration: {iteration}')
             if debug_plot:
                 unique_cluster_labels = np.unique(cluster_labels)
                 for i in unique_cluster_labels:
@@ -186,6 +194,8 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
                 axs[1, 1].set_title("Final Grouping")
                 fig.tight_layout()
                 plt.show()
+
+            print(f'Converged at iteration: {iteration}')
             return cluster_labels, centroid_list
 
     if debug_plot:
@@ -206,5 +216,4 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 if __name__=='__main__':
     #np.random.seed(2021)
     x, y = generate_clustering_dataset(plotting=False)
-    data = np.array([x, y])
     cluster_labels, centroids = k_means(data, debug_plot=True)
