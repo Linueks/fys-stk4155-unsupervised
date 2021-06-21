@@ -28,7 +28,7 @@ def gaussian_points(dim=2, n_points=1000, mean_vector=np.array([0, 0]),
 
 
 
-def generate_clustersing_dataset(plotting=True, return_data=True):
+def generate_clustering_dataset(plotting=True, return_data=True):
     """
     Toy model to illustrate k-means clustering
     """
@@ -64,26 +64,19 @@ def generate_clustersing_dataset(plotting=True, return_data=True):
 
 
 
-def get_distances_to_clusters():
-    return 0
-
-
-
 def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
             debug_plot=False):
 
     dimensions, samples = data.shape
-
     # we need to (randomly) choose initial centroids
     centroids = np.zeros((dimensions, n_clusters))
     for k in range(n_clusters):
-        idx = np.random.randint(0, samples)                               # TODO: There is one bug here that with very few points two centroids might be the same point
+        idx = np.random.randint(0, samples)                                     # TODO: There is one bug here that with very few points two centroids might be the same point
         centroids[:, k] = data[0, idx], data[1, idx]
 
     # next we initialize an array to hold the distance from each centroid to
-    # every point in our dataset (There are ways to optimize, we'll get to that)
+    # every point in our dataset
     distances = np.zeros((n_clusters, samples))
-
     # we find the squared Euclidean distance from each centroid to every point
     for k in range(n_clusters):
         for i in range(samples):
@@ -95,21 +88,17 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
                 # point and the j-th cluster
 
     # then we need to assign each data point to their closest centroid
-    # based on squared Euclidean distance
-    # This can probably be done in one loop but starting with simplest for me
-
-
     # We initialize a list to put our points into clusters. This way we do it here
     # the index signifies which point and the value which cluster
     cluster_labels = np.zeros(samples, dtype='int')
 
     # basically just a self written argmin
-    for i in range(distances.shape[1]):
+    for i in range(samples):
         # track keeping variable for finding the smallest value in each column
         # set to big number to avoid missing numbers
         smallest = 1e10
         smallest_row_index = 1e10
-        for k in range(distances.shape[0]):
+        for k in range(n_clusters):
             #print(distances[k, i])
             if distances[k, i] < smallest:
                 smallest = distances[k, i]
@@ -135,8 +124,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
                                 label = i)
 
         axs[1, 0].set_title("First Grouping of Points to Centroids")
-        plt.tight_layout()
-        plt.show()
+
 
 
     centroid_list = []
@@ -172,85 +160,51 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         cluster_labels = np.zeros(samples, dtype='int')
 
         # basically just a self written argmin
-        for i in range(distances.shape[1]):
+        for i in range(samples):
             # track keeping variable for finding the smallest value in each column
             # set to big number to avoid missing numbers
             smallest = 1e10
             smallest_row_index = 1e10
-            for k in range(distances.shape[0]):
-                #print(distances[k, i])
+            for k in range(n_clusters):
                 if distances[k, i] < smallest:
                     smallest = distances[k, i]
                     smallest_row_index = k
 
             cluster_labels[i] = smallest_row_index
 
-        #print(centroid_list)
-
         centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
 
         if centroid_difference < tolerance:
             print(f'Converged at iteration: {iteration}')
+            if debug_plot:
+                unique_cluster_labels = np.unique(cluster_labels)
+                for i in unique_cluster_labels:
+                    axs[1, 1].scatter(data[0, cluster_labels == i],
+                                data[1, cluster_labels == i],
+                                label = i)
+
+                axs[1, 1].set_title("Final Grouping")
+                fig.tight_layout()
+                plt.show()
             return cluster_labels, centroid_list
+
+    if debug_plot:
+        unique_cluster_labels = np.unique(cluster_labels)
+        for i in unique_cluster_labels:
+            axs[1, 1].scatter(data[0, cluster_labels == i],
+                        data[1, cluster_labels == i],
+                        label = i)
+
+        axs[1, 1].set_title("Final Grouping")
+        fig.tight_layout()
+        plt.show()
 
     return cluster_labels, centroid_list
 
 
 
 if __name__=='__main__':
-    """
-    from sklearn.datasets import load_digits
-    from sklearn.decomposition import PCA
-    mnist_data, mnist_targets = load_digits(return_X_y=True)
-
-    pca = PCA(2)
-    dimensional_reduced_data = pca.fit_transform(mnist_data).T
-    #print(np.shape(dimensional_reduced_data))
-    cluster_labels, centroids = k_means(dimensional_reduced_data, n_clusters=10, debug_plot=False)
-
-    print(centroids[0] == centroids[1])
-
-    unique_k_means_cluster_labels = np.unique(cluster_labels)
-    fig, ax1 = plt.subplots(figsize=(10, 6))
-    for i in unique_k_means_cluster_labels:
-        ax1.scatter(dimensional_reduced_data[0, cluster_labels == i],
-                    dimensional_reduced_data[1, cluster_labels == i],
-                    label = i)
-    ax1.set_title("K means grouping")
-    fig.legend()
-
-
-    fig2, ax2 = plt.subplots(figsize=(10, 6))
-    unique_actual_labels = np.unique(mnist_targets)
-    for i in unique_actual_labels:
-        ax2.scatter(dimensional_reduced_data[0, mnist_targets == i],
-                    dimensional_reduced_data[1, mnist_targets == i],
-                    label = i)
-    ax2.set_title("PCA result")
-    #plt.tight_layout()
-    fig2.legend()
-    plt.show()
-    #"""
-
-
-    #"""
     #np.random.seed(2021)
-    x, y = generate_clustersing_dataset(plotting=False)
+    x, y = generate_clustering_dataset(plotting=False)
     data = np.array([x, y])
-
-    #x = [1, 4, 3, 10, 5]
-    #y = [11, 9, 8, 10, 15]
-
     cluster_labels, centroids = k_means(data, debug_plot=True)
-
-    unique_cluster_labels = np.unique(cluster_labels)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for i in unique_cluster_labels:
-        ax.scatter(data[0, cluster_labels == i],
-                    data[1, cluster_labels == i],
-                    label = i)
-
-    ax.set_title("Final Grouping")
-    plt.tight_layout()
-    plt.show()
-    #"""
