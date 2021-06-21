@@ -22,11 +22,11 @@ def get_distances_to_clusters(data, centroids):
     the i-th point and the j-th centroid.
 
     Inputs:
-        data (np.array): with dimensions (dim x samples)
-        centroids (np.array): with dimensions (dim x n_clusters)
+        data (np.array): with dimensions (samples x dim)
+        centroids (np.array): with dimensions (n_clusters x dim)
 
     Returns:
-        distances (np.array): with dimensions (n_clusters x samples)
+        distances (np.array): with dimensions (samples x n_clusters)
     """
 
     samples, dimensions = data.shape
@@ -52,7 +52,7 @@ def assign_points_to_clusters(distances):
     method.
 
     Inputs:
-        distances (np.array): with dimensions (n_clusters x samples)
+        distances (np.array): with dimensions (samples x n_clusters)
 
     Returns:
         cluster_labels (np.array): with dimensions (samples)
@@ -89,7 +89,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     centroids.
 
     Inputs:
-        data (np.array): with dimesions (dim x samples)
+        data (np.array): with dimesions (samples x dim)
         n_clusters (int): hyperparameter which depends on dataset
         max_iterations (int): hyperparameter which depends on dataset
         tolerance (float): convergence measure
@@ -98,7 +98,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     Returns:
         cluster_labels (np.array): with dimension (samples)
         centroid_list (list): list of centroids (np.array)
-                              with dimensions (dim x n_clusters)
+                              with dimensions (n_clusters x dim)
     """
     samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids

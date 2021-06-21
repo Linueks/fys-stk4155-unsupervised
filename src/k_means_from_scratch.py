@@ -25,7 +25,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     centroids.
 
     Inputs:
-        data (np.array): with dimesions (dim x samples)
+        data (np.array): with dimesions (samples x dim)
         n_clusters (int): hyperparameter which depends on dataset
         max_iterations (int): hyperparameter which depends on dataset
         tolerance (float): convergence measure
@@ -34,7 +34,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     Returns:
         cluster_labels (np.array): with dimension (samples)
         centroid_list (list): list of centroids (np.array)
-                              with dimensions (dim x n_clusters)
+                              with dimensions (n_clusters x dim)
     """
     samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids
