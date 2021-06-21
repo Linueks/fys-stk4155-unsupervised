@@ -1,8 +1,9 @@
 """
 Program naively implementing k-means algorithm from scratch in Python
-Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content. A lot like the
 most basic implementation but in this file we have defined some functions for
 readability.
+--------------------------------------------------------------------------------
+Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content. A lot like the
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,15 +29,15 @@ def get_distances_to_clusters(data, centroids):
         distances (np.array): with dimensions (n_clusters x samples)
     """
 
-    dimensions, samples = data.shape
-    n_clusters = centroids.shape[1]
-    distances = np.zeros((n_clusters, samples))
+    samples, dimensions = data.shape
+    n_clusters = centroids.shape[0]
+    distances = np.zeros((samples, n_clusters))
     for k in range(n_clusters):
         for i in range(samples):
             dist = 0
             for j in range(dimensions):
-                dist += np.abs(data[j, i] - centroids[j, k])**2
-                distances[k, i] = dist
+                dist += np.abs(data[i, j] - centroids[k, j])**2
+                distances[i, k] = dist
                 # the way this is setup now we have Dist[i, j] = the distance between the i-th
                 # point and the j-th cluster
 
@@ -56,7 +57,7 @@ def assign_points_to_clusters(distances):
     Returns:
         cluster_labels (np.array): with dimensions (samples)
     """
-    n_clusters, samples = distances.shape
+    samples, n_clusters = distances.shape
     cluster_labels = np.zeros(samples, dtype='int')
     # basically just a self written argmin
     for i in range(samples):
@@ -66,8 +67,8 @@ def assign_points_to_clusters(distances):
         smallest_row_index = 1e10
         for k in range(n_clusters):
             #print(distances[k, i])
-            if distances[k, i] < smallest:
-                smallest = distances[k, i]
+            if distances[i, k] < smallest:
+                smallest = distances[i, k]
                 smallest_row_index = k
 
         cluster_labels[i] = smallest_row_index
@@ -99,31 +100,31 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         centroid_list (list): list of centroids (np.array)
                               with dimensions (dim x n_clusters)
     """
-    dimensions, samples = data.shape
+    samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids
-    centroids = np.zeros((dimensions, n_clusters))
+    centroids = np.zeros((n_clusters, dimensions))
     for k in range(n_clusters):
         idx = np.random.randint(0, samples)                                     # TODO: There is one bug here that with very few points two centroids might be the same point
-        centroids[:, k] = data[0, idx], data[1, idx]
+        centroids[k, :] = data[idx, 0], data[idx, 1]
 
     distances = get_distances_to_clusters(data, centroids)
     cluster_labels = assign_points_to_clusters(distances)
 
     if plot_results:
         fig, axs = plt.subplots(2, 2, figsize=(10, 6))
-        axs[0, 0].scatter(data[0], data[1])
+        axs[0, 0].scatter(data[:, 0], data[:, 1])
         axs[0, 0].set_title("Toy Model Dataset")
 
 
-        axs[0, 1].scatter(data[0], data[1])
-        axs[0, 1].scatter(centroids[0, :], centroids[1, :])
+        axs[0, 1].scatter(data[:, 0], data[:, 1])
+        axs[0, 1].scatter(centroids[:, 0], centroids[:, 1])
         axs[0, 1].set_title("Initial Random Centroids")
 
 
         unique_cluster_labels = np.unique(cluster_labels)
         for i in unique_cluster_labels:
-            axs[1, 0].scatter(data[0, cluster_labels == i],
-                                data[1, cluster_labels == i],
+            axs[1, 0].scatter(data[cluster_labels == i, 0],
+                                data[cluster_labels == i, 1],
                                 label = i)
 
         axs[1, 0].set_title("First Grouping of Points to Centroids")
@@ -140,11 +141,11 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
             n = 0
             for i in range(samples):
                 if cluster_labels[i] == k:
-                    vector_mean += data[:, i]
+                    vector_mean += data[i, :]
                     n += 1
             # And update according to the new means
-            centroids[:, k] = vector_mean / n
-            distances = np.zeros((n_clusters, samples))
+            centroids[k, :] = vector_mean / n
+            distances = np.zeros((samples, n_clusters))
 
         # we need to use copies to avoid overwriting (pointer stuff)
         temp_centroids = centroids.copy()
@@ -157,25 +158,25 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
         centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
         if centroid_difference < tolerance:
+            print(f'Converged at iteration: {iteration}')
             if plot_results:
                 unique_cluster_labels = np.unique(cluster_labels)
                 for i in unique_cluster_labels:
-                    axs[1, 1].scatter(data[0, cluster_labels == i],
-                                data[1, cluster_labels == i],
+                    axs[1, 1].scatter(data[cluster_labels == i, 0],
+                                data[cluster_labels == i, 1],
                                 label = i)
 
                 axs[1, 1].set_title("Final Grouping")
                 fig.tight_layout()
                 plt.show()
 
-            print(f'Converged at iteration: {iteration}')
             return cluster_labels, centroid_list
 
     if plot_results:
         unique_cluster_labels = np.unique(cluster_labels)
         for i in unique_cluster_labels:
-            axs[1, 1].scatter(data[0, cluster_labels == i],
-                        data[1, cluster_labels == i],
+            axs[1, 1].scatter(data[cluster_labels == i, 0],
+                        data[cluster_labels == i, 1],
                         label = i)
 
         axs[1, 1].set_title("Final Grouping")
@@ -188,4 +189,4 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 if __name__=='__main__':
     np.random.seed(2021)
     data = generate_clustering_dataset(dim=2, n_points=1000, plotting=False)
-    cluster_labels, centroids = k_means(data, plot_results=False)
+    cluster_labels, centroids = k_means(data, plot_results=True)
