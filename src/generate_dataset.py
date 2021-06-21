@@ -27,7 +27,7 @@ def gaussian_points(dim=2, n_points=1000, mean_vector=np.array([0, 0]),
 
 
 
-def generate_clustering_dataset(plotting=True, return_data=True):
+def generate_clustering_dataset(dim=2, n_points=1000, plotting=True, return_data=True):
     """
     Toy model to illustrate k-means clustering
     """
