@@ -2,9 +2,14 @@
 Program naively implementing k-means algorithm from scratch in Python
 Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content
 """
+import numpy as np
+import matplotlib.pyplot as plt
+#plt.style.use('ggplot')
 
 
-def gaussian_points(dim=2, n_points=1000, mean_vector=[0, 0], sample_variance=1):
+
+def gaussian_points(dim=2, n_points=1000, mean_vector=np.array([0, 0]),
+                    sample_variance=1):
     """
     Very simple custom function to generate gaussian distributed point clusters
     with variable dimension, number of points, means in each direction
@@ -12,11 +17,11 @@ def gaussian_points(dim=2, n_points=1000, mean_vector=[0, 0], sample_variance=1)
 
     dim: float
     n_points: int
-    mean_vector: list (where index 0 is x, index 1 is y and so on) must match dim
+    mean_vector: np.array (where index 0 is x, index 1 is y and so on) must match dim
     sample_variance: float
     """
 
-    mean_matrix = np.zeros(dim) + np.asarray(mean_vector)
+    mean_matrix = np.zeros(dim) + mean_vector
     covariance_matrix = np.eye(dim) * sample_variance
     data = np.random.multivariate_normal(mean_matrix, covariance_matrix, n_points)
     return data.T
@@ -28,10 +33,10 @@ def generate_clustersing_dataset(plotting=True, return_data=True):
     Toy model to illustrate k-means clustering
     """
 
-    x1, y1 = gaussian_points(mean_vector=[5, 5])
+    x1, y1 = gaussian_points(mean_vector=np.array([5, 5]))
     x2, y2 = gaussian_points()
-    x3, y3 = gaussian_points(mean_vector=[1, 4.5])
-    x4, y4 = gaussian_points(mean_vector=[5, 1])
+    x3, y3 = gaussian_points(mean_vector=np.array([1, 4.5]))
+    x4, y4 = gaussian_points(mean_vector=np.array([5, 1]))
 
     data_x = np.concatenate([x1, x2, x3, x4])
     data_y = np.concatenate([y1, y2, y3, y4])
@@ -59,13 +64,9 @@ def generate_clustersing_dataset(plotting=True, return_data=True):
 
 
 
-def k_means(data,
-            n_clusters=4,
-            max_iterations=20,
-            tolerance=1e-8,
+def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
             debug_plot=False):
 
-    # first we collect our 'dataset' in one array for convenience
 
     # we need to (randomly) choose initial centroids
     centroids = np.zeros((data.shape[0], n_clusters))
@@ -133,8 +134,8 @@ def k_means(data,
 
 
     centroid_list = []
-    centroid_list.append(centroids)
-
+    temp_centroids = centroids.copy()
+    centroid_list.append(temp_centroids)
     # For each cluster we need to update the centroid by calculating new means
     # for all the data points in the cluster and repeat
     for iteration in range(max_iterations):
@@ -148,10 +149,11 @@ def k_means(data,
                     n += 1
             # And update according to the new means
             centroids[:, k] = vector_mean / n
-
             distances = np.zeros((n_clusters, data.shape[1]))
 
-        centroid_list.append(centroids)
+        # we need to use copies to avoid overwriting (pointer stuff)
+        temp_centroids = centroids.copy()
+        centroid_list.append(temp_centroids)
 
         # we find the squared Euclidean distance from each centroid to every point
         for k in range(n_clusters):
@@ -177,9 +179,12 @@ def k_means(data,
 
             cluster_labels[i] = smallest_row_index
 
+        #print(centroid_list)
+
         centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
 
         if centroid_difference < tolerance:
+            print(f'Converged at iteration: {iteration}')
             return cluster_labels, centroid_list
 
     return cluster_labels, centroid_list
@@ -187,11 +192,42 @@ def k_means(data,
 
 
 if __name__=='__main__':
-    import numpy as np
-    import matplotlib.pyplot as plt
-    #plt.style.use('ggplot')
+    """
+    from sklearn.datasets import load_digits
+    from sklearn.decomposition import PCA
+    mnist_data, mnist_targets = load_digits(return_X_y=True)
+
+    pca = PCA(2)
+    dimensional_reduced_data = pca.fit_transform(mnist_data).T
+    #print(np.shape(dimensional_reduced_data))
+    cluster_labels, centroids = k_means(dimensional_reduced_data, n_clusters=10, debug_plot=False)
+
+    print(centroids[0] == centroids[1])
+
+    unique_k_means_cluster_labels = np.unique(cluster_labels)
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    for i in unique_k_means_cluster_labels:
+        ax1.scatter(dimensional_reduced_data[0, cluster_labels == i],
+                    dimensional_reduced_data[1, cluster_labels == i],
+                    label = i)
+    ax1.set_title("K means grouping")
+    fig.legend()
 
 
+    fig2, ax2 = plt.subplots(figsize=(10, 6))
+    unique_actual_labels = np.unique(mnist_targets)
+    for i in unique_actual_labels:
+        ax2.scatter(dimensional_reduced_data[0, mnist_targets == i],
+                    dimensional_reduced_data[1, mnist_targets == i],
+                    label = i)
+    ax2.set_title("PCA result")
+    #plt.tight_layout()
+    fig2.legend()
+    plt.show()
+    #"""
+
+
+    #"""
     #np.random.seed(2021)
     x, y = generate_clustersing_dataset(plotting=False)
     data = np.array([x, y])
@@ -201,7 +237,6 @@ if __name__=='__main__':
 
     cluster_labels, centroids = k_means(data, debug_plot=False)
 
-    """
     unique_cluster_labels = np.unique(cluster_labels)
     fig, ax = plt.subplots(figsize=(10, 6))
     for i in unique_cluster_labels:
@@ -213,6 +248,3 @@ if __name__=='__main__':
     plt.tight_layout()
     plt.show()
     #"""
-
-
-    print(centroids)
