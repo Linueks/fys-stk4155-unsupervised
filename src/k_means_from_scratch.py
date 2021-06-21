@@ -64,25 +64,31 @@ def generate_clustersing_dataset(plotting=True, return_data=True):
 
 
 
+def get_distances_to_clusters():
+    return 0
+
+
+
 def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
             debug_plot=False):
 
+    dimensions, samples = data.shape
 
     # we need to (randomly) choose initial centroids
-    centroids = np.zeros((data.shape[0], n_clusters))
+    centroids = np.zeros((dimensions, n_clusters))
     for k in range(n_clusters):
-        idx = np.random.randint(0, data.shape[1])                               # TODO: There is one bug here that with very few points two centroids might be the same point
+        idx = np.random.randint(0, samples)                               # TODO: There is one bug here that with very few points two centroids might be the same point
         centroids[:, k] = data[0, idx], data[1, idx]
 
     # next we initialize an array to hold the distance from each centroid to
     # every point in our dataset (There are ways to optimize, we'll get to that)
-    distances = np.zeros((n_clusters, data.shape[1]))
+    distances = np.zeros((n_clusters, samples))
 
     # we find the squared Euclidean distance from each centroid to every point
     for k in range(n_clusters):
-        for i in range(data.shape[1]):
+        for i in range(samples):
             dist = 0
-            for j in range(data.shape[0]):
+            for j in range(dimensions):
                 dist += np.abs(data[j, i] - centroids[j, k])**2
                 distances[k, i] = dist
                 # the way this is setup now we have Dist[i, j] = the distance between the i-th
@@ -95,7 +101,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
     # We initialize a list to put our points into clusters. This way we do it here
     # the index signifies which point and the value which cluster
-    cluster_labels = np.zeros(data.shape[1], dtype='int')
+    cluster_labels = np.zeros(samples, dtype='int')
 
     # basically just a self written argmin
     for i in range(distances.shape[1]):
@@ -141,15 +147,15 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     for iteration in range(max_iterations):
         for k in range(n_clusters):
             # Here we find the mean for each centroid
-            vector_mean = np.zeros(data.shape[0])
+            vector_mean = np.zeros(dimensions)
             n = 0
-            for i in range(data.shape[1]):
+            for i in range(samples):
                 if cluster_labels[i] == k:
                     vector_mean += data[:, i]
                     n += 1
             # And update according to the new means
             centroids[:, k] = vector_mean / n
-            distances = np.zeros((n_clusters, data.shape[1]))
+            distances = np.zeros((n_clusters, samples))
 
         # we need to use copies to avoid overwriting (pointer stuff)
         temp_centroids = centroids.copy()
@@ -157,13 +163,13 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
         # we find the squared Euclidean distance from each centroid to every point
         for k in range(n_clusters):
-            for i in range(data.shape[1]):
+            for i in range(samples):
                 dist = 0
-                for j in range(data.shape[0]):
+                for j in range(dimensions):
                     dist += np.abs(data[j, i] - centroids[j, k])**2
                     distances[k, i] = dist
 
-        cluster_labels = np.zeros(data.shape[1], dtype='int')
+        cluster_labels = np.zeros(samples, dtype='int')
 
         # basically just a self written argmin
         for i in range(distances.shape[1]):
@@ -235,7 +241,7 @@ if __name__=='__main__':
     #x = [1, 4, 3, 10, 5]
     #y = [11, 9, 8, 10, 15]
 
-    cluster_labels, centroids = k_means(data, debug_plot=False)
+    cluster_labels, centroids = k_means(data, debug_plot=True)
 
     unique_cluster_labels = np.unique(cluster_labels)
     fig, ax = plt.subplots(figsize=(10, 6))
