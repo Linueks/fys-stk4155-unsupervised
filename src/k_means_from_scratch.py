@@ -174,5 +174,5 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
 if __name__=='__main__':
     #np.random.seed(2021)
-    x, y = generate_clustering_dataset(plotting=False)
+    data = generate_clustering_dataset(plotting=False)
     cluster_labels, centroids = k_means(data, debug_plot=True)
