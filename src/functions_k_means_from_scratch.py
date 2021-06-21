@@ -102,10 +102,16 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     """
     samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids
+    centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
+
+    """
     centroids = np.zeros((n_clusters, dimensions))
+
     for k in range(n_clusters):
         idx = np.random.randint(0, samples)                                     # TODO: There is one bug here that with very few points two centroids might be the same point
         centroids[k, :] = data[idx, 0], data[idx, 1]
+    """
+
 
     distances = get_distances_to_clusters(data, centroids)
     cluster_labels = assign_points_to_clusters(distances)

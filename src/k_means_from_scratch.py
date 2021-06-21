@@ -38,12 +38,13 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     """
     samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids
+    """
     centroids = np.zeros((n_clusters, dimensions))
     for k in range(n_clusters):
         idx = np.random.randint(0, samples)                                     # TODO: There is one bug here that with very few points two centroids might be the same point
         centroids[k, :] = data[idx, 0], data[idx, 1]
-
-    #print(centroids)
+    """
+    centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
     # next we initialize an array to hold the distance from each centroid to
     # every point in our dataset
     distances = np.zeros((samples, n_clusters))
