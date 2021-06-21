@@ -1,10 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-#plt.style.use('ggplot')
-# Program naively implementing k-means algorithm from scratch in Numpy Python
+"""
+Program naively implementing k-means algorithm from scratch in Python
+Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content
+"""
 
 
-def gaussian_points(dim=2, n_points=100, mean_vector=[0, 0], sample_variance=1):
+def gaussian_points(dim=2, n_points=1000, mean_vector=[0, 0], sample_variance=1):
     """
     Very simple custom function to generate gaussian distributed point clusters
     with variable dimension, number of points, means in each direction
@@ -59,7 +59,12 @@ def generate_clustersing_dataset(plotting=True, return_data=True):
 
 
 
-def k_means(data, n_clusters=4, max_iterations=20):
+def k_means(data,
+            n_clusters=4,
+            max_iterations=20,
+            tolerance=1e-8,
+            debug_plot=False):
+
     # first we collect our 'dataset' in one array for convenience
 
     # we need to (randomly) choose initial centroids
@@ -105,7 +110,6 @@ def k_means(data, n_clusters=4, max_iterations=20):
 
         cluster_labels[i] = smallest_row_index
 
-    debug_plot = False
     if debug_plot:
         fig, axs = plt.subplots(2, 2, figsize=(10, 6))
         axs[0, 0].scatter(data[0], data[1])
@@ -119,7 +123,9 @@ def k_means(data, n_clusters=4, max_iterations=20):
 
         unique_cluster_labels = np.unique(cluster_labels)
         for i in unique_cluster_labels:
-            axs[1, 0].scatter(data[0, cluster_labels == i] , data[1, cluster_labels == i] , label = i)
+            axs[1, 0].scatter(data[0, cluster_labels == i],
+                                data[1, cluster_labels == i],
+                                label = i)
 
         axs[1, 0].set_title("First Grouping of Points to Centroids")
         plt.tight_layout()
@@ -131,7 +137,7 @@ def k_means(data, n_clusters=4, max_iterations=20):
 
     # For each cluster we need to update the centroid by calculating new means
     # for all the data points in the cluster and repeat
-    for _ in range(max_iterations):
+    for iteration in range(max_iterations):
         for k in range(n_clusters):
             # Here we find the mean for each centroid
             vector_mean = np.zeros(data.shape[0])
@@ -146,6 +152,7 @@ def k_means(data, n_clusters=4, max_iterations=20):
             distances = np.zeros((n_clusters, data.shape[1]))
 
         centroid_list.append(centroids)
+
         # we find the squared Euclidean distance from each centroid to every point
         for k in range(n_clusters):
             for i in range(data.shape[1]):
@@ -170,31 +177,42 @@ def k_means(data, n_clusters=4, max_iterations=20):
 
             cluster_labels[i] = smallest_row_index
 
+        centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
 
-    return cluster_labels
+        if centroid_difference < tolerance:
+            return cluster_labels, centroid_list
+
+    return cluster_labels, centroid_list
 
 
-
-
-
-print("testing")
 
 if __name__=='__main__':
-    np.random.seed(2021)
-    x, y = generate_clustersing_dataset(plotting=True)
+    import numpy as np
+    import matplotlib.pyplot as plt
+    #plt.style.use('ggplot')
+
+
+    #np.random.seed(2021)
+    x, y = generate_clustersing_dataset(plotting=False)
     data = np.array([x, y])
 
     #x = [1, 4, 3, 10, 5]
     #y = [11, 9, 8, 10, 15]
 
-    labels = k_means(data)
+    cluster_labels, centroids = k_means(data, debug_plot=False)
 
-
-    unique_cluster_labels = np.unique(labels)
+    """
+    unique_cluster_labels = np.unique(cluster_labels)
     fig, ax = plt.subplots(figsize=(10, 6))
     for i in unique_cluster_labels:
-        ax.scatter(data[0, labels == i] , data[1, labels == i] , label = i)
+        ax.scatter(data[0, cluster_labels == i],
+                    data[1, cluster_labels == i],
+                    label = i)
 
     ax.set_title("Final Grouping")
     plt.tight_layout()
     plt.show()
+    #"""
+
+
+    print(centroids)
