@@ -12,20 +12,58 @@ from generate_dataset import *
 
 
 def get_distances_to_clusters(data, centroids):
+    """
+    Squared Euclidean distance between all data-points and every centroid. For
+    the function to work properly it needs data and centroids to be numpy
+    broadcastable. We sum along the dimension axis.
+
+    Inputs:
+        data (np.array): with dimensions (samples x 1 x dim)
+        centroids (np.array): with dimensions (1 x n_clusters x dim)
+
+    Returns:
+        distances (np.array): with dimensions (samples x n_clusters)
+    """
     distances = np.sum(np.abs((data - centroids))**2, axis=2)
-    #distances = np.linalg.norm(data - centroids, axis=2)
     return distances
 
 
 
 def assign_points_to_clusters(distances):
-    samples, n_clusters = distances.shape
+    """
+    Assigning each data-point to a cluster given an array distances containing
+    the squared Euclidean distance from every point to each centroid. We do
+    np.argmin along the cluster axis to find the closest cluster. Returns a
+    numpy array with corresponding labels.
+
+    Inputs:
+        distances (np.array): with dimensions (samples x n_clusters)
+
+    Returns:
+        cluster_labels (np.array): with dimensions (samples x None)
+    """
     cluster_labels = np.argmin(distances, axis=1)
     return cluster_labels
 
 
 
-def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8, plot_results=True):
+def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
+            plot_results=True):
+    """
+    Numpythonic implementation of the k-means clusting algorithm.
+
+    Inputs:
+        data (np.array): with dimesions (samples x dim)
+        n_clusters (int): hyperparameter which depends on dataset
+        max_iterations (int): hyperparameter which depends on dataset
+        tolerance (float): convergence measure
+        plot_results (bool): activation flag for plotting
+
+    Returns:
+        cluster_labels (np.array): with dimension (samples)
+        centroid_list (list): list of centroids (np.array)
+                              with dimensions (n_clusters x dim)
+    """
     centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
 
     distances = get_distances_to_clusters(data.reshape((4000, 1, 2)),
@@ -91,6 +129,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8, plot_results=
         fig.tight_layout()
         plt.show()
 
+    print(f'Did not converge in {max_iterations} iterations')
     return cluster_labels, centroids_list
 
 
