@@ -38,12 +38,6 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
     """
     samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids
-    """
-    centroids = np.zeros((n_clusters, dimensions))
-    for k in range(n_clusters):
-        idx = np.random.randint(0, samples)                                     # TODO: There is one bug here that with very few points two centroids might be the same point
-        centroids[k, :] = data[idx, 0], data[idx, 1]
-    """
     centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
     # next we initialize an array to hold the distance from each centroid to
     # every point in our dataset
@@ -55,8 +49,6 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
             for j in range(dimensions):
                 dist += np.abs(data[i, j] - centroids[k, j])**2
                 distances[i, k] = dist
-                # the way this is setup now we have Dist[i, j] = the distance between the i-th
-                # point and the j-th cluster
 
     # then we need to assign each data point to their closest centroid
     # We initialize a list to put our points into clusters. This way we do it here
@@ -171,12 +163,12 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         fig.tight_layout()
         plt.show()
 
+    print(f'Did not converge in {max_iterations} iterations')
     return cluster_labels, centroid_list
 
 
 
 if __name__=='__main__':
     np.random.seed(2021)
-    data = generate_clustering_dataset(dim=2, n_points=1000, plotting=False)
-    #print(data.shape)
-    cluster_labels, centroids = k_means(data, plot_results=True)
+    data = generate_clustering_dataset(dim=2, n_points=1000, plotting=False, return_data=True)
+    cluster_labels, centroids = k_means(data, max_iterations=20, plot_results=True)
