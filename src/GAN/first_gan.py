@@ -217,7 +217,7 @@ def generate_and_save_images(model, epoch, test_input):
         plt.axis('off')
 
     plt.savefig(f'./images_from_seed_images/image_at_epoch_{str(epoch).zfill(3)}.png')
-    #plt.close()
+    plt.close()
     #plt.show()
 
 
