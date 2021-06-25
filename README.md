@@ -7,4 +7,8 @@ Code examples made as a summer job (2021) for the course FYS-STK4155: Applied Da
 # Some Preliminary Results
 
 ## Generative Adversarial Network MNIST
-![alt text](https://github.com/Linueks/fys-stk4155-unsupervised/blob/main/src/GAN/images_from_seed_images/generation.gif)
+Below is a gif of the generator network converging to a something which looks
+like MNIST digits over the span of 100 epochs of training. 
+<p align="center">
+  <img width="460" height="300" src="https://github.com/Linueks/fys-stk4155-unsupervised/blob/main/src/GAN/images_from_seed_images/generation.gif">
+</p>
