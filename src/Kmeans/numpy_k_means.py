@@ -47,8 +47,8 @@ def assign_points_to_clusters(distances):
 
 
 
-def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
-            plot_results=True):
+def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
+            plot_results=True, progression_plot=True):
     """
     Numpythonic implementation of the k-means clusting algorithm.
 
@@ -64,10 +64,11 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         centroid_list (list): list of centroids (np.array)
                               with dimensions (n_clusters x dim)
     """
+    n_samples, dimensions = data.shape
     centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
 
-    distances = get_distances_to_clusters(data.reshape((4000, 1, 2)),
-                                            centroids.reshape((1, 4, 2)))
+    distances = get_distances_to_clusters(data.reshape((n_samples, 1, dimensions)),
+                                    centroids.reshape((1, n_clusters, dimensions)))
     cluster_labels = assign_points_to_clusters(distances)
 
     if plot_results:
@@ -97,9 +98,43 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
         temp_centroids = centroids.copy()
         centroids_list.append(temp_centroids)
-        distances = get_distances_to_clusters(np.reshape(data, (4000, 1, 2)),
-                                                np.reshape(centroids, (1, 4, 2)))
+        distances = get_distances_to_clusters(np.reshape(data, (n_samples, 1, dimensions)),
+                                                np.reshape(centroids, (1, n_clusters, dimensions)))
         cluster_labels = assign_points_to_clusters(distances)
+
+
+        if progression_plot:
+            unique_cluster_labels = np.unique(cluster_labels)
+            #fig, ax = plt.subplots(figsize=(4, 4))
+
+            fig = plt.figure(figsize=(4, 4))
+            if dimensions == 3:
+                ax = fig.add_subplot(projection='3d')
+
+            elif dimensions == 2:
+                ax = fig.add_subplot()
+
+            else:
+                print('cant plot in this other dimensions')
+
+            file_folder = './clustering_example_images/'
+            for i in unique_cluster_labels:
+                ax.scatter(data[cluster_labels == i, 0],
+                        data[cluster_labels == i, 1],
+                        label = i,
+                        s = 8,
+                        alpha = 0.6)
+
+                ax.scatter(centroids[:, 0], centroids[:, 1], c='black')
+
+                ax.set_title(f'Clusters at iteration {iteration}')
+                #fig.tight_layout()
+                #fig.legend()
+                plt.savefig(file_folder + f'c_image_at_it_{str(iteration).zfill(3)}.png')
+            plt.close()
+
+
+
 
         centroid_difference = np.sum(np.abs(centroids_list[iteration] - centroids_list[iteration-1]))
         if centroid_difference < tolerance:
@@ -135,5 +170,6 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
 if __name__=='__main__':
     np.random.seed(2021)
-    data = generate_clustering_dataset(dim=2, n_points=1000, plotting=False, return_data=True)
-    k_means(data, max_iterations=20, plot_results=True)
+    simple_data = generate_simple_clustering_dataset(n_points=1000, plotting=False)
+    complicated_data = generate_complicated_clustering_dataset(n_points=1000, plotting=False)
+    k_means(complicated_data, n_clusters=8, plot_results=False, progression_plot=True)
