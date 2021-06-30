@@ -1,0 +1,452 @@
+<!--
+HTML file automatically generated from DocOnce source
+(https://github.com/doconce/doconce/)
+doconce format html Clustering.do.txt 
+-->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="DocOnce: https://github.com/doconce/doconce/" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title></title>
+<style type="text/css">
+/* blueish style */
+body {
+  margin-top: 1.0em;
+  background-color: #ffffff;
+  font-family: Helvetica, Arial, FreeSans, san-serif;
+  color: #000000;
+}
+h1 { font-size: 1.8em; color: #1e36ce; }
+h2 { font-size: 1.6em; color: #1e36ce; }
+h3 { font-size: 1.4em; color: #1e36ce; }
+h4 { font-size: 1.2em; color: #1e36ce; }
+a { color: #1e36ce; text-decoration:none; }
+tt { font-family: "Courier New", Courier; }
+p { text-indent: 0px; }
+hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+p.caption { width: 80%; font-style: normal; text-align: left; }
+hr.figure { border: 0; width: 80%; border-bottom: 1px solid #aaa; }
+/* pre style removed because it will interfer with pygments */
+div.highlight {
+    border: 1px solid #cfcfcf;
+    border-radius: 2px;
+    line-height: 1.21429em;
+}
+div.cell {
+    width: 100%;
+    padding: 5px 5px 5px 0;
+    margin: 0;
+    outline: none;
+}
+div.input {
+    page-break-inside: avoid;
+    box-orient: horizontal;
+    box-align: stretch;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+div.inner_cell {
+    box-orient: vertical;
+    box-align: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    box-flex: 1;
+    flex: 1;
+}
+div.input_area {
+    border: 1px solid #cfcfcf;
+    border-radius: 4px;
+    background: #f7f7f7;
+    line-height: 1.21429em;
+}
+div.input_area > div.highlight {
+    margin: .4em;
+    border: none;
+    padding: 0;
+    background-color: transparent;
+}
+div.output_wrapper {
+    position: relative;
+    box-orient: vertical;
+    box-align: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.output {
+    box-orient: vertical;
+    box-align: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+div.output_area {
+    padding: 0;
+    page-break-inside: avoid;
+    box-orient: horizontal;
+    box-align: stretch;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+div.output_subarea {
+    padding: .4em .4em 0 .4em;
+    box-flex: 1;
+    flex: 1;
+}
+div.output_text {
+    text-align: left;
+    color: #000;
+    line-height: 1.21429em;
+}
+div { text-align: justify; text-justify: inter-word; }
+.tab {
+  padding-left: 1.5em;
+}
+div.toc p,a {
+  line-height: 1.3;
+  margin-top: 1.1;
+  margin-bottom: 1.1;
+}
+</style>
+</head>
+
+<!-- tocinfo
+{'highest level': 1,
+ 'sections': [('Clustering Analysis', 1, None, 'clustering-analysis'),
+              ('Basic Idea of the K-means Clustering Algorithm',
+               2,
+               None,
+               'basic-idea-of-the-k-means-clustering-algorithm'),
+              ('The K-means Clustering Algorithm',
+               2,
+               None,
+               'the-k-means-clustering-algorithm'),
+              ('Writing Our Own Code', 2, None, 'writing-our-own-code'),
+              ('Basic Python', 3, None, 'basic-python')]}
+end of tocinfo -->
+
+<body>
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  TeX: {
+     equationNumbers: {  autoNumber: "AMS"  },
+     extensions: ["AMSmath.js", "AMSsymbols.js", "autobold.js", "color.js"]
+  }
+});
+</script>
+<script type="text/javascript" async
+ src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- ------------------- main content ---------------------- -->
+<h1 id="clustering-analysis">Clustering Analysis </h1>
+<p>In this chapter we will concern ourselves with the study of <b>cluster analysis</b>.
+In general terms cluster analysis, or clustering, is the task of grouping a
+data-set into different distinct categories based on some measure of equality of
+the data. This measure is often referred to as a <b>metric</b> or <b>similarity
+measure</b> in the literature (note: sometimes we deal with a <b>dissimilarity
+measure</b> instead). Usually, these metrics are formulated as some kind of
+distance function between points in a high-dimensional space.
+</p>
+
+<p>There exists a lot of such distance measures. The simplest, and also the most
+common is the <b>Euclidean distance</b> (i.e. Pythagoras). A good source for those of
+you wanting a thorough overview is the article (DOI:10.5120/ijca2016907841
+Irani, Pise, Phatak). A few other metrics mentioned there are: <em>cosine
+similarity</em>, <em>Manhattan distance</em>, <em>Chebychev distance</em> and the <em>Minkowski
+distance</em>. The Minkowski distance is a general formulation which encapsulates a
+range of metrics. All of these, and many more, can be used in clustering. There
+exists different categories of clustering algorithms. A few of the most
+common are: <em>centroid-</em>, <em>distribution-</em>, <em>density-</em> and <em>hierarchical-
+clustering</em>. We will concern ourselves primarily with the first one.
+</p>
+<h2 id="basic-idea-of-the-k-means-clustering-algorithm">Basic Idea of the K-means Clustering Algorithm </h2>
+<p>The simplest of all clustering algorithms is the aptly named <b>k-means algorithm</b>
+, sometimes also referred to as <em>Lloyds algorithm</em>. It is the simplest and also
+the most common. From its simplicity it obtains both strengths and weaknesses.
+These will be discussed in more detail later. The k-means algorithm is a
+<b>centroid based</b> clustering algorithm.
+</p>
+
+<p>Assume, we are given \( n \) data points and we wish to split the data into \( K < n \)
+different categories, or clusters. We label each cluster by an integer \( k\in\{
+1, \cdots, K \} \). In the basic k-means algorithm each point is assigned to only
+one cluster \( k \), and these assignments are <em>non-injective</em> i.e. many-to-one. We
+can think of these mappings as an encoder \( k = C(i) \), which assigns the \( i \)-th
+data-point \( \bf x_i \) to the \( k \)-th cluster. Before we jump into the mathematics
+let us describe the k-means algorithm in words:
+</p>
+<ol>
+<li> We start with guesses / random initializations of our \( k \) cluster centers / centroids</li>
+<li> For each centroid the points that are most similar are identified</li>
+<li> Then we move / replace each centroid with a coordinate average of all the points that were assigned to that centroid.</li>
+<li> Iterate this points 2, 3) until the centroids no longer move (to some tolerance)</li>
+</ol>
+<p>Now we consider the method formally. Again, we assume we have \( n \) data-points
+(vectors)
+</p>
+$$
+\begin{equation}\label{eq:kmeanspoints}
+  \boldsymbol{x_i}  = \{x_{i, 1}, \cdots, x_{i, p}\}\in\mathbb{R}^p.
+\end{equation}
+$$
+
+<p>which we wish to group into \( K < n \) clusters. For our dissimilarity measure we
+will use the <em>squared Euclidean distance</em>
+</p>
+$$
+\begin{equation}\label{eq:squaredeuclidean}
+  d(\boldsymbol{x_i}, \boldsymbol{x_i'}) = \sum_{j=1}^p(x_{ij} - x_{i'j})^2
+                         = ||\boldsymbol{x_i} - \boldsymbol{x_{i'}}||^2
+\end{equation}
+$$
+
+<p>Next we define the so called <em>within-cluster point scatter</em> which gives us a
+measure of how close each data point assigned to the same cluster tends to be to
+the all the others.
+</p>
+$$
+\begin{equation}\label{eq:withincluster}
+  W(C) = \frac{1}{2}\sum_{k=1}^K\sum_{C(i)=k}
+          \sum_{C(i')=k}d(\boldsymbol{x_i}, \boldsymbol{x_{i'}}) =
+          \sum_{k=1}^KN_k\sum_{C(i)=k}||\boldsymbol{x_i} - \boldsymbol{\overline{x_k}}||^2
+\end{equation}
+$$
+
+<p>where \( \boldsymbol{\overline{x_k}} \) is the mean vector associated with the \( k \)-th
+cluster, and \( N_k = \sum_{i=1}^nI(C(i) = k) \), where the \( I() \) notation is
+similar to the Kronecker delta (<em>Commonly used in statistics, it just means that
+when \( i = k \) we have the encoder \( C(i) \)</em>). In other words,  the within-cluster
+scatter measures the compactness of each cluster with respect to the data points
+assigned to each cluster. This is the quantity that the \( k \)-means algorithm aims
+to minimize. We refer to this quantity \( W(C) \) as the within cluster scatter
+because of its relation to the <em>total scatter</em>.
+</p>
+$$
+\begin{equation}\label{eq:totalscatter}
+  T = W(C) + B(C) = \frac{1}{2}\sum_{i=1}^n
+                    \sum_{i'=1}^nd(\boldsymbol{x_i}, \boldsymbol{x_{i'}})
+                  = \frac{1}{2}\sum_{k=1}^K\sum_{C(i)=k}
+                    \Big(\sum_{C(i') = k}d(\boldsymbol{x_i}, \boldsymbol{x_{i'}})
+                  + \sum_{C(i')\neq k}d(\boldsymbol{x_i}, \boldsymbol{x_{i'}})\Big)
+\end{equation}
+$$
+
+<p>Which is a quantity that is conserved throughout the \( k \)-means algorithm. It can
+be thought of as the total amount of information in the data, and it is composed
+of the aforementioned within-cluster scatter and the <em>between-cluster scatter</em>
+\( B(C) \). In methods such as principle component analysis the total scatter is not
+conserved.
+</p>
+
+<p>Given a cluster mean \( \boldsymbol{m_k} \) we define the <b>total cluster variance</b></p>
+$$
+\begin{equation}\label{eq:totalclustervariance}
+  \min_{C, \{\boldsymbol{m_k}\}_1^K}\sum_{k=1}^KN_k\sum||\boldsymbol{x_i} - \boldsymbol{m_k}||^2
+\end{equation}
+$$
+
+<p>Now we have all the pieces necessary to formally revisit the k-means algorithm.
+If you at this point feel like some of the above definitions came a bit out of
+no-where, don't fret, the method does get a whole lot simpler once we start
+programming.
+</p>
+<h2 id="the-k-means-clustering-algorithm">The K-means Clustering Algorithm </h2>
+<p>The k-means clustering algorithm goes as follows (note in my opinion this
+description is a bit complicated and is lifted directly out of ESL HASTIE for
+deeper understanding purposes)
+</p>
+
+<ol>
+<li> For a given cluster assignment \( C \), and \( k \) cluster means \( \{m_1, \cdots, m_k\} \). We minimize the total cluster variance with respect to the cluster means \( \{m_k\} \) yielding the means of the currently assigned clusters.</li>
+<li> Given a current set of \( k \) means \( \{m_k\} \) the total cluster variance is minimized by assigning each observation to the closest (current) cluster mean. That is $$C(i) = \underset{1\leq k\leq K}{\mathrm{argmin}} ||\boldsymbol{x_i} - \boldsymbol{m_k}||^2$$</li>
+<li> Steps 1 and 2 are repeated until the assignments do not change.</li>
+</ol>
+<p>As previously stated the above formulation can be a bit difficult to understand,
+<em>at least the first time</em>, due to the dense notation used. But all in all the
+concept is fairly simple when explained in words. The math needs to be
+understood but to help you along the way we summarize the algorithm as follows
+(try to look at the terms above to match with the summary).
+</p>
+
+<ol>
+<li> Before we start we specify a number \( k \) which is the number of clusters we want to try to separate our data into.</li>
+<li> We initially choose \( k \) random data points in our data as our initial centroids, <em>or means</em> (this is where the name comes from).</li>
+<li> Assign each data point to their closest centroid, based on the squared Euclidean distance.</li>
+<li> For each of the \( k \) cluster we update the centroid by calculating new mean values for all the data points in the cluster.</li>
+<li> Iteratively minimize the within cluster scatter by performing steps (3, 4) until the new assignments stop changing (can be to some tolerance) or until a maximum number of iterations have passed.</li>
+</ol>
+<p>That's it, nothing magical happening.</p>
+<h2 id="writing-our-own-code">Writing Our Own Code </h2>
+<p>In the following section we will work to develop a deeper understanding of the
+previously discussed mathematics through developing codes to do k-means cluster
+analysis.
+</p>
+<h3 id="basic-python">Basic Python </h3>
+<p>Let us now program the most basic version of the algorithm using nothing but
+Python with numpy arrays. This code is kept intentionally simple to gradually
+progress our understanding. There is no vectorization of any kind, and even most
+helper functions are not utilized. Throughout our implementation process it will
+be helpful to keep in mind both the mathematical description of the algorithm
+<em>and</em> our summary from above.
+</p>
+
+<p>First of all we need a dataset to do our cluster analysis on, for clarity (and
+lack of googling beforehand) we generate it ourselves using Gaussians. First we
+import
+</p>
+
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="cell border-box-sizing code_cell rendered">
+  <div class="input">
+    <div class="inner_cell">
+      <div class="input_area">
+        <div class="highlight" style="background: #f8f8f8">
+  <pre style="line-height: 125%;"><span style="color: #666666">%</span>matplotlib inline
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">IPython.display</span> <span style="color: #008000; font-weight: bold">import</span> display
+</pre>
+</div>
+      </div>
+    </div>
+  </div>
+  <div class="output_wrapper">
+    <div class="output">
+      <div class="output_area">
+        <div class="output_subarea output_stream output_stdout output_text">          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>Next we define functions, for ease of use later, to generate Gaussians and to
+set up our toy data set.
+</p>
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="cell border-box-sizing code_cell rendered">
+  <div class="input">
+    <div class="inner_cell">
+      <div class="input_area">
+        <div class="highlight" style="background: #f8f8f8">
+  <pre style="line-height: 125%;"><span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">gaussian_points</span>(dim<span style="color: #666666">=2</span>, n_points<span style="color: #666666">=1000</span>, mean_vector<span style="color: #666666">=</span>np<span style="color: #666666">.</span>array([<span style="color: #666666">0</span>, <span style="color: #666666">0</span>]),
+                    sample_variance<span style="color: #666666">=1</span>):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Very simple custom function to generate gaussian distributed point clusters</span>
+<span style="color: #BA2121; font-style: italic">    with variable dimension, number of points, means in each direction</span>
+<span style="color: #BA2121; font-style: italic">    (must match dim) and sample variance.</span>
+
+<span style="color: #BA2121; font-style: italic">    Inputs:</span>
+<span style="color: #BA2121; font-style: italic">        dim (int)</span>
+<span style="color: #BA2121; font-style: italic">        n_points (int)</span>
+<span style="color: #BA2121; font-style: italic">        mean_vector (np.array) (where index 0 is x, index 1 is y etc.)</span>
+<span style="color: #BA2121; font-style: italic">        sample_variance (float)</span>
+
+<span style="color: #BA2121; font-style: italic">    Returns:</span>
+<span style="color: #BA2121; font-style: italic">        data (np.array): with dimensions (dim x n_points)</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+
+    mean_matrix <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros(dim) <span style="color: #666666">+</span> mean_vector
+    covariance_matrix <span style="color: #666666">=</span> np<span style="color: #666666">.</span>eye(dim) <span style="color: #666666">*</span> sample_variance
+    data <span style="color: #666666">=</span> np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>multivariate_normal(mean_matrix, covariance_matrix,
+                                    n_points)
+    <span style="color: #008000; font-weight: bold">return</span> data
+
+
+
+<span style="color: #008000; font-weight: bold">def</span> <span style="color: #0000FF">generate_simple_clustering_dataset</span>(dim<span style="color: #666666">=2</span>, n_points<span style="color: #666666">=1000</span>, plotting<span style="color: #666666">=</span><span style="color: #008000; font-weight: bold">True</span>,
+                                    return_data<span style="color: #666666">=</span><span style="color: #008000; font-weight: bold">True</span>):
+    <span style="color: #BA2121; font-style: italic">&quot;&quot;&quot;</span>
+<span style="color: #BA2121; font-style: italic">    Toy model to illustrate k-means clustering</span>
+<span style="color: #BA2121; font-style: italic">    &quot;&quot;&quot;</span>
+
+    data1 <span style="color: #666666">=</span> gaussian_points(mean_vector<span style="color: #666666">=</span>np<span style="color: #666666">.</span>array([<span style="color: #666666">5</span>, <span style="color: #666666">5</span>]))
+    data2 <span style="color: #666666">=</span> gaussian_points()
+    data3 <span style="color: #666666">=</span> gaussian_points(mean_vector<span style="color: #666666">=</span>np<span style="color: #666666">.</span>array([<span style="color: #666666">1</span>, <span style="color: #666666">4.5</span>]))
+    data4 <span style="color: #666666">=</span> gaussian_points(mean_vector<span style="color: #666666">=</span>np<span style="color: #666666">.</span>array([<span style="color: #666666">5</span>, <span style="color: #666666">1</span>]))
+    data <span style="color: #666666">=</span> np<span style="color: #666666">.</span>concatenate((data1, data2, data3, data4), axis<span style="color: #666666">=0</span>)
+
+    <span style="color: #008000; font-weight: bold">if</span> plotting:
+        fig1, ax1 <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>subplots(figsize<span style="color: #666666">=</span>(<span style="color: #666666">8</span>, <span style="color: #666666">5</span>))
+        ax1<span style="color: #666666">.</span>scatter(data[:, <span style="color: #666666">0</span>], data[:, <span style="color: #666666">1</span>])
+        ax1<span style="color: #666666">.</span>set_aspect(<span style="color: #BA2121">&#39;equal&#39;</span>)
+        <span style="color: #408080; font-style: italic">#ax1.grid()</span>
+
+        plt<span style="color: #666666">.</span>show()
+
+
+    <span style="color: #008000; font-weight: bold">if</span> return_data:
+        <span style="color: #008000; font-weight: bold">return</span> data
+
+
+data <span style="color: #666666">=</span> generate_simple_clustering_dataset()
+</pre>
+</div>
+      </div>
+    </div>
+  </div>
+  <div class="output_wrapper">
+    <div class="output">
+      <div class="output_area">
+        <div class="output_subarea output_stream output_stdout output_text">          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>Now that we are our, albeit very simple, dataset we are ready to start
+implementing the k-means algorithm.
+</p>
+
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="cell border-box-sizing code_cell rendered">
+  <div class="input">
+    <div class="inner_cell">
+      <div class="input_area">
+        <div class="highlight" style="background: #f8f8f8">
+  <pre style="line-height: 125%;">n_samples, dimensions <span style="color: #666666">=</span> data<span style="color: #666666">.</span>shape
+k_clusters <span style="color: #666666">=</span>
+
+<span style="color: #408080; font-style: italic"># we randomly initialize our centroids</span>
+centroids <span style="color: #666666">=</span> data[np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>choice(n_samples, k_clusters, replace<span style="color: #666666">=</span><span style="color: #008000; font-weight: bold">False</span>), :]
+distances <span style="color: #666666">=</span> np<span style="color: #666666">.</span>zeros((n_samples, n_clusters))
+
+<span style="color: #408080; font-style: italic"># first we need to assign each point to our initial centroids</span>
+<span style="color: #008000; font-weight: bold">for</span> k <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n_clusters):
+    <span style="color: #008000; font-weight: bold">for</span> n <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(n_samples):
+        dist <span style="color: #666666">=</span> <span style="color: #666666">0</span>
+        <span style="color: #008000; font-weight: bold">for</span> d <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(dimensions):
+            dist <span style="color: #666666">+=</span> np<span style="color: #666666">.</span>abs(data[n, d] <span style="color: #666666">-</span> centroids[k, d])<span style="color: #666666">**2</span>
+            distances[n, k] <span style="color: #666666">=</span> dist
+</pre>
+</div>
+      </div>
+    </div>
+  </div>
+  <div class="output_wrapper">
+    <div class="output">
+      <div class="output_area">
+        <div class="output_subarea output_stream output_stdout output_text">          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ------------------- end of main content --------------- -->
+</body>
+</html>
+

@@ -1,6 +1,240 @@
 ======= Clustering Analysis =======
-In this chapter we will concern ourselves with the study of *cluster analysis*.
+In this chapter we will concern ourselves with the study of _cluster analysis_.
 In general terms cluster analysis, or clustering, is the task of grouping a
 data-set into different distinct categories based on some measure of equality of
-the data. This measure is often referred to as a *metric* or *similarity
-measure*
+the data. This measure is often referred to as a _metric_ or _similarity
+measure_ in the literature (note: sometimes we deal with a _dissimilarity
+measure_ instead). Usually, these metrics are formulated as some kind of
+distance function between points in a high-dimensional space.
+
+There exists a lot of such distance measures. The simplest, and also the most
+common is the _Euclidean distance_ (i.e. Pythagoras). A good source for those of
+you wanting a thorough overview is the article (DOI:10.5120/ijca2016907841
+Irani, Pise, Phatak). A few other metrics mentioned there are: *cosine
+similarity*, *Manhattan distance*, *Chebychev distance* and the *Minkowski
+distance*. The Minkowski distance is a general formulation which encapsulates a
+range of metrics. All of these, and many more, can be used in clustering. There
+exists different categories of clustering algorithms. A few of the most
+common are: *centroid-*, *distribution-*, *density-* and *hierarchical-
+clustering*. We will concern ourselves primarily with the first one.
+
+===== Basic Idea of the K-means Clustering Algorithm =====
+The simplest of all clustering algorithms is the aptly named _k-means algorithm_
+, sometimes also referred to as *Lloyds algorithm*. It is the simplest and also
+the most common. From its simplicity it obtains both strengths and weaknesses.
+These will be discussed in more detail later. The k-means algorithm is a
+_centroid based_ clustering algorithm.
+
+Assume, we are given $n$ data points and we wish to split the data into $K < n$
+different categories, or clusters. We label each cluster by an integer $k\in\{
+1, \cdots, K \}$. In the basic k-means algorithm each point is assigned to only
+one cluster $k$, and these assignments are *non-injective* i.e. many-to-one. We
+can think of these mappings as an encoder $k = C(i)$, which assigns the $i$-th
+data-point $\bf x_i$ to the $k$-th cluster. Before we jump into the mathematics
+let us describe the k-means algorithm in words:
+o We start with guesses / random initializations of our $k$ cluster centers /
+  centroids
+o For each centroid the points that are most similar are identified
+o Then we move / replace each centroid with a coordinate average of all the
+  points that were assigned to that centroid.
+o Iterate this points 2, 3) until the centroids no longer move (to some
+  tolerance)
+
+Now we consider the method formally. Again, we assume we have $n$ data-points
+(vectors)
+!bt
+\begin{equation}\label{eq:kmeanspoints}
+  \bm{x_i}  = \{x_{i, 1}, \cdots, x_{i, p}\}\in\mathbb{R}^p.
+\end{equation}
+!et
+which we wish to group into $K < n$ clusters. For our dissimilarity measure we
+will use the *squared Euclidean distance*
+!bt
+\begin{equation}\label{eq:squaredeuclidean}
+  d(\bm{x_i}, \bm{x_i'}) = \sum_{j=1}^p(x_{ij} - x_{i'j})^2
+                         = ||\bm{x_i} - \bm{x_{i'}}||^2
+\end{equation}
+!et
+
+Next we define the so called *within-cluster point scatter* which gives us a
+measure of how close each data point assigned to the same cluster tends to be to
+the all the others.
+!bt
+\begin{equation}\label{eq:withincluster}
+  W(C) = \frac{1}{2}\sum_{k=1}^K\sum_{C(i)=k}
+          \sum_{C(i')=k}d(\bm{x_i}, \bm{x_{i'}}) =
+          \sum_{k=1}^KN_k\sum_{C(i)=k}||\bm{x_i} - \bm{\overline{x_k}}||^2
+\end{equation}
+!et
+where $\bm{\overline{x_k}}$ is the mean vector associated with the $k$-th
+cluster, and $N_k = \sum_{i=1}^nI(C(i) = k)$, where the $I()$ notation is
+similar to the Kronecker delta (*Commonly used in statistics, it just means that
+when $i = k$ we have the encoder $C(i)$*). In other words,  the within-cluster
+scatter measures the compactness of each cluster with respect to the data points
+assigned to each cluster. This is the quantity that the $k$-means algorithm aims
+to minimize. We refer to this quantity $W(C)$ as the within cluster scatter
+because of its relation to the *total scatter*.
+!bt
+\begin{equation}\label{eq:totalscatter}
+  T = W(C) + B(C) = \frac{1}{2}\sum_{i=1}^n
+                    \sum_{i'=1}^nd(\bm{x_i}, \bm{x_{i'}})
+                  = \frac{1}{2}\sum_{k=1}^K\sum_{C(i)=k}
+                    \Big(\sum_{C(i') = k}d(\bm{x_i}, \bm{x_{i'}})
+                  + \sum_{C(i')\neq k}d(\bm{x_i}, \bm{x_{i'}})\Big)
+\end{equation}
+!et
+Which is a quantity that is conserved throughout the $k$-means algorithm. It can
+be thought of as the total amount of information in the data, and it is composed
+of the aforementioned within-cluster scatter and the *between-cluster scatter*
+$B(C)$. In methods such as principle component analysis the total scatter is not
+conserved.
+
+Given a cluster mean $\bm{m_k}$ we define the _total cluster variance_
+!bt
+\begin{equation}\label{eq:totalclustervariance}
+  \min_{C, \{\bm{m_k}\}_1^K}\sum_{k=1}^KN_k\sum||\bm{x_i} - \bm{m_k}||^2
+\end{equation}
+!et
+Now we have all the pieces necessary to formally revisit the k-means algorithm.
+If you at this point feel like some of the above definitions came a bit out of
+no-where, don't fret, the method does get a whole lot simpler once we start
+programming.
+
+===== The K-means Clustering Algorithm =====
+The k-means clustering algorithm goes as follows (note in my opinion this
+description is a bit complicated and is lifted directly out of ESL HASTIE for
+deeper understanding purposes)
+
+o For a given cluster assignment $C$, and $k$ cluster means
+  $\{m_1, \cdots, m_k\}$. We minimize the total cluster variance with respect to
+  the cluster means $\{m_k\}$ yielding the means of the currently assigned
+  clusters.
+o Given a current set of $k$ means $\{m_k\}$ the total cluster variance is
+  minimized by assigning each observation to the closest (current) cluster mean.
+  That is $$C(i) = \underset{1\leq k\leq K}{\mathrm{argmin}}
+  ||\bm{x_i} - \bm{m_k}||^2$$
+o Steps 1 and 2 are repeated until the assignments do not change.
+
+As previously stated the above formulation can be a bit difficult to understand,
+*at least the first time*, due to the dense notation used. But all in all the
+concept is fairly simple when explained in words. The math needs to be
+understood but to help you along the way we summarize the algorithm as follows
+(try to look at the terms above to match with the summary).
+
+o Before we start we specify a number $k$ which is the number of clusters we
+  want to try to separate our data into.
+o We initially choose $k$ random data points in our data as our initial
+  centroids, *or means* (this is where the name comes from).
+o Assign each data point to their closest centroid, based on the squared
+  Euclidean distance.
+o For each of the $k$ cluster we update the centroid by calculating new mean
+  values for all the data points in the cluster.
+o Iteratively minimize the within cluster scatter by performing steps (3, 4)
+  until the new assignments stop changing (can be to some tolerance) or
+  until a maximum number of iterations have passed.
+
+That's it, nothing magical happening.
+
+
+===== Writing Our Own Code =====
+In the following section we will work to develop a deeper understanding of the
+previously discussed mathematics through developing codes to do k-means cluster
+analysis.
+
+=== Basic Python ===
+Let us now program the most basic version of the algorithm using nothing but
+Python with numpy arrays. This code is kept intentionally simple to gradually
+progress our understanding. There is no vectorization of any kind, and even most
+helper functions are not utilized. Throughout our implementation process it will
+be helpful to keep in mind both the mathematical description of the algorithm
+*and* our summary from above.
+
+First of all we need a dataset to do our cluster analysis on, for clarity (and
+lack of googling beforehand) we generate it ourselves using Gaussians. First we
+import
+
+!bc pycod
+%matplotlib inline
+import matplotlib.pyplot as plt
+import numpy as np
+from IPython.display import display
+
+!ec
+
+Next we define functions, for ease of use later, to generate Gaussians and to
+set up our toy data set.
+!bc pycod
+def gaussian_points(dim=2, n_points=1000, mean_vector=np.array([0, 0]),
+                    sample_variance=1):
+    """
+    Very simple custom function to generate gaussian distributed point clusters
+    with variable dimension, number of points, means in each direction
+    (must match dim) and sample variance.
+
+    Inputs:
+        dim (int)
+        n_points (int)
+        mean_vector (np.array) (where index 0 is x, index 1 is y etc.)
+        sample_variance (float)
+
+    Returns:
+        data (np.array): with dimensions (dim x n_points)
+    """
+
+    mean_matrix = np.zeros(dim) + mean_vector
+    covariance_matrix = np.eye(dim) * sample_variance
+    data = np.random.multivariate_normal(mean_matrix, covariance_matrix,
+                                    n_points)
+    return data
+
+
+
+def generate_simple_clustering_dataset(dim=2, n_points=1000, plotting=True,
+                                    return_data=True):
+    """
+    Toy model to illustrate k-means clustering
+    """
+
+    data1 = gaussian_points(mean_vector=np.array([5, 5]))
+    data2 = gaussian_points()
+    data3 = gaussian_points(mean_vector=np.array([1, 4.5]))
+    data4 = gaussian_points(mean_vector=np.array([5, 1]))
+    data = np.concatenate((data1, data2, data3, data4), axis=0)
+
+    if plotting:
+        fig1, ax1 = plt.subplots(figsize=(8, 5))
+        ax1.scatter(data[:, 0], data[:, 1])
+        ax1.set_aspect('equal')
+        #ax1.grid()
+
+        plt.show()
+
+
+    if return_data:
+        return data
+
+
+data = generate_simple_clustering_dataset()
+!ec
+
+Now that we are our, albeit very simple, dataset we are ready to start
+implementing the k-means algorithm.
+
+!bc pycod
+n_samples, dimensions = data.shape
+k_clusters =
+
+# we randomly initialize our centroids
+centroids = data[np.random.choice(n_samples, k_clusters, replace=False), :]
+distances = np.zeros((n_samples, n_clusters))
+
+# first we need to assign each point to our initial centroids
+for k in range(n_clusters):
+    for n in range(n_samples):
+        dist = 0
+        for d in range(dimensions):
+            dist += np.abs(data[n, d] - centroids[k, d])**2
+            distances[n, k] = dist
+
+
+!ec
