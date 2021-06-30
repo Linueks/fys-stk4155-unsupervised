@@ -1,0 +1,6 @@
+======= Clustering Analysis =======
+In this chapter we will concern ourselves with the study of *cluster analysis*.
+In general terms cluster analysis, or clustering, is the task of grouping a
+data-set into different distinct categories based on some measure of equality of
+the data. This measure is often referred to as a *metric* or *similarity
+measure*
