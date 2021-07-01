@@ -147,7 +147,9 @@ Python with numpy arrays. This code is kept intentionally simple to gradually
 progress our understanding. There is no vectorization of any kind, and even most
 helper functions are not utilized. Throughout our implementation process it will
 be helpful to keep in mind both the mathematical description of the algorithm
-*and* our summary from above.
+*and* our summary from above. In addition, try to think of ways to optimize this
+while reading the next section. We will get to it, take it as a challenge to see
+if your optimizations are better.
 
 First of all we need a dataset to do our cluster analysis on, for clarity (and
 lack of googling beforehand) we generate it ourselves using Gaussians. First we
@@ -157,7 +159,10 @@ import
 %matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 from IPython.display import display
+
+np.random.seed(2021)
 
 !ec
 
@@ -202,11 +207,9 @@ def generate_simple_clustering_dataset(dim=2, n_points=1000, plotting=True,
     data = np.concatenate((data1, data2, data3, data4), axis=0)
 
     if plotting:
-        fig1, ax1 = plt.subplots(figsize=(8, 5))
-        ax1.scatter(data[:, 0], data[:, 1])
-        ax1.set_aspect('equal')
-        #ax1.grid()
-
+        fig, ax = plt.subplots()
+        ax.scatter(data[:, 0], data[:, 1], alpha=0.2)
+        ax.set_title('Toy Model Dataset')
         plt.show()
 
 
@@ -222,13 +225,13 @@ implementing the k-means algorithm.
 
 !bc pycod
 n_samples, dimensions = data.shape
-k_clusters =
+n_clusters = 4
 
 # we randomly initialize our centroids
-centroids = data[np.random.choice(n_samples, k_clusters, replace=False), :]
+centroids = data[np.random.choice(n_samples, n_clusters, replace=False), :]
 distances = np.zeros((n_samples, n_clusters))
 
-# first we need to assign each point to our initial centroids
+# first we need to calculate the distance to each centroid from our data
 for k in range(n_clusters):
     for n in range(n_samples):
         dist = 0
@@ -236,5 +239,244 @@ for k in range(n_clusters):
             dist += np.abs(data[n, d] - centroids[k, d])**2
             distances[n, k] = dist
 
+# we initialize an array to keep track of to which cluster each point belongs
+# the way we set it up here the index tracks which point and the value which
+# cluster the point belongs to
+cluster_labels = np.zeros(n_samples, dtype='int')
+
+# next we loop through our samples and for every point assign it to the cluster
+# to which it has the smallest distance to
+for n in range(n_samples):
+    # tracking variables (all of this is basically just an argmin)
+    smallest = 1e10
+    smallest_row_index = 1e10
+    for k in range(n_clusters):
+        if distances[n, k] < smallest:
+            smallest = distances[n, k]
+            smallest_row_index = k
+
+    cluster_labels[n] = smallest_row_index
 
 !ec
+
+Let's plot and see
+
+!bc pycod
+fig = plt.figure()
+ax = fig.add_subplot()
+unique_cluster_labels = np.unique(cluster_labels)
+for i in unique_cluster_labels:
+    ax.scatter(data[cluster_labels == i, 0],
+               data[cluster_labels == i, 1],
+               label = i,
+               alpha = 0.2)
+    ax.scatter(centroids[:, 0], centroids[:, 1], c='black')
+
+ax.set_title("First Grouping of Points to Centroids")
+
+plt.show()
+!ec
+
+So what do we have so far? We have 'picked' $k$ centroids at random from our
+data points. There are other ways of more intelligently choosing their
+initializations, however for our purposes randomly is fine. Then we have
+initialized an array 'distances' which holds the information of the distance,
+*or dissimilarity*, of every point to of our centroids. Finally, we have
+initialized an array 'cluster_labels' which according to our distances array
+holds the information of to which centroid every point is assigned. This was the
+first pass of our algorithm. Essentially, all we need to do now is repeat the
+distance and assignment steps above until we have reached a desired convergence
+or a maximum amount of iterations.
+
+!bc pycod
+
+max_iterations = 100
+tolerance = 1e-8
+start_time = time.time()
+
+for iteration in range(max_iterations):
+    prev_centroids = centroids.copy()
+    for k in range(n_clusters):
+        # this array will be used to update our centroid positions
+        vector_mean = np.zeros(dimensions)
+        mean_divisor = 0
+        for n in range(n_samples):
+            if cluster_labels[n] == k:
+                vector_mean += data[n, :]
+                mean_divisor += 1
+
+        # update according to the k means
+        centroids[k, :] = vector_mean / mean_divisor
+
+    # we find the dissimilarity
+    for k in range(n_clusters):
+        for n in range(n_samples):
+            dist = 0
+            for d in range(dimensions):
+                dist += np.abs(data[n, d] - centroids[k, d])**2
+                distances[n, k] = dist
+
+    # assign each point
+    for n in range(n_samples):
+        smallest = 1e10
+        smallest_row_index = 1e10
+        for k in range(n_clusters):
+            if distances[n, k] < smallest:
+                smallest = distances[n, k]
+                smallest_row_index = k
+
+        cluster_labels[n] = smallest_row_index
+
+    # convergence criteria
+    centroid_difference = np.sum(np.abs(centroids - prev_centroids))
+    if centroid_difference < tolerance:
+        print(f'Converged at iteration {iteration}')
+        print(f'Runtime: {time.time() - start_time} seconds')
+        break
+
+    elif iteration == max_iterations:
+        print(f'Did not converge in {max_iterations} iterations')
+        print(f'Runtime: {time.time() - start_time} seconds')
+
+!ec
+
+And thats it! We now have an extremely barebones, un-optimized k-means
+clustering implementation. Lets plot the final result
+
+!bc pycod
+fig = plt.figure()
+ax = fig.add_subplot()
+unique_cluster_labels = np.unique(cluster_labels)
+for i in unique_cluster_labels:
+    ax.scatter(data[cluster_labels == i, 0],
+               data[cluster_labels == i, 1],
+               label = i,
+               alpha = 0.2)
+    ax.scatter(centroids[:, 0], centroids[:, 1], c='black')
+
+ax.set_title("Final Result of K-means Clustering")
+
+plt.show()
+!ec
+
+Now there are a few glaring improvements to be done here. First of all is
+organizing things into functions for better readability. Second is getting rid
+of the small inefficiencies like manually calculating distances and argmin. And
+finally, we need to optimize for better run-time. It's like we always say: the
+best way of looping in Python is to not loop in Python. Let us tackle the first
+two improvements in one step.
+
+!bc pycod
+
+def get_distances_to_clusters(data, centroids):
+    """
+    Function that for each cluster finds the squared Euclidean distance
+    from every data point to the cluster centroid and returns a numpy array
+    containing the distances such that distance[i, j] means the distance between
+    the i-th point and the j-th centroid.
+    Inputs:
+        data (np.array): with dimensions (n_samples x dim)
+        centroids (np.array): with dimensions (n_clusters x dim)
+
+    Returns:
+        distances (np.array): with dimensions (n_samples x n_clusters)
+    """
+
+    n_samples, dimensions = data.shape
+    n_clusters = centroids.shape[0]
+    distances = np.zeros((n_samples, n_clusters))
+    for k in range(n_clusters):
+        for i in range(n_samples):
+            dist = 0
+            for j in range(dimensions):
+                dist += np.abs(data[i, j] - centroids[k, j])**2
+                distances[i, k] = dist
+
+    return distances
+
+
+
+def assign_points_to_clusters(distances):
+    """
+    Function to assign each data point to the cluster to which it is the closest
+    based on the squared Euclidean distance from the get_distances_to_clusters
+    method.
+    Inputs:
+        distances (np.array): with dimensions (n_samples x n_clusters)
+
+    Returns:
+        cluster_labels (np.array): with dimensions (n_samples)
+    """
+    cluster_labels = np.argmin(distances, axis=1)
+
+    return cluster_labels
+
+
+
+def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
+    """
+    Naive implementation of the k-means clustering algorithm. A short summary of
+    the algorithm is as follows: we randomly initialize k centroids / means.
+    Then we assign, using the squared Euclidean distance, every data-point to a
+    cluster. We then update the position of the k centroids / means, and repeat
+    until convergence or we reach our desired maximum iterations. The method
+    returns the cluster assignments of our data-points and a sequence of
+    centroids.
+    Inputs:
+        data (np.array): with dimesions (n_samples x dim)
+        n_clusters (int): hyperparameter which depends on dataset
+        max_iterations (int): hyperparameter which depends on dataset
+        tolerance (float): convergence measure
+
+    Returns:
+        cluster_labels (np.array): with dimension (n_samples)
+        centroid_list (list): list of centroids (np.array)
+                              with dimensions (n_clusters x dim)
+    """
+
+    samples, dimensions = data.shape
+    centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
+    distances = get_distances_to_clusters(data, centroids)
+    cluster_labels = assign_points_to_clusters(distances)
+
+    start_time = time.time()
+
+    for iteration in range(max_iterations):
+        prev_centroids = centroids.copy()
+        for k in range(n_clusters):
+            vector_mean = np.zeros(dimensions)
+            mean_divisor = 0
+            for n in range(n_samples):
+                if cluster_labels[n] == k:
+                    vector_mean += data[n, :]
+                    mean_divisor += 1
+            # And update according to the new means
+            centroids[k, :] = vector_mean / mean_divisor
+
+        distances = get_distances_to_clusters(data, centroids)
+        cluster_labels = assign_points_to_clusters(distances)
+
+        centroid_difference = np.sum(np.abs(centroids - prev_centroids))
+        if centroid_difference < tolerance:
+            print(f'Converged at iteration: {iteration}')
+            print(f'Runtime: {time.time() - start_time} seconds')
+
+            return cluster_labels, centroids
+
+    print(f'Did not converge in {max_iterations} iterations')
+    print(f'Runtime: {time.time() - start_time} seconds')
+
+    return cluster_labels, centroids
+
+
+# quirk of numpy / Jupyter need to set seed again
+np.random.seed(2021)
+cluster_labels, centroids = k_means(data)
+
+!ec
+
+_Note_: the start of the timing is after the random initialization, and first
+'cycle' of our algorithm. This is technically not the correct way to time it but
+due to this being in a Jupyter notebook and the way it is structured this way of
+comparing our algorithms will produce a more equal result. When timing code we
+should always encapsulate our whole computation block.
