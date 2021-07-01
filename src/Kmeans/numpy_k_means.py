@@ -48,7 +48,7 @@ def assign_points_to_clusters(distances):
 
 
 def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
-            plot_results=True, progression_plot=True):
+            progression_plot=True):
     """
     Numpythonic implementation of the k-means clusting algorithm.
 
@@ -57,13 +57,15 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
         n_clusters (int): hyperparameter which depends on dataset
         max_iterations (int): hyperparameter which depends on dataset
         tolerance (float): convergence measure
-        plot_results (bool): activation flag for plotting
+        progression_plot (bool): activation flag for plotting
 
     Returns:
         cluster_labels (np.array): with dimension (samples)
         centroid_list (list): list of centroids (np.array)
                               with dimensions (n_clusters x dim)
     """
+    start_time = time.time()
+
     n_samples, dimensions = data.shape
     centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
 
@@ -71,33 +73,20 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
                                     centroids.reshape((1, n_clusters, dimensions)))
     cluster_labels = assign_points_to_clusters(distances)
 
-    if plot_results:
-        fig, axs = plt.subplots(2, 2, figsize=(10, 6))
-        axs[0, 0].scatter(data[:, 0], data[:, 1])
-        axs[0, 0].set_title("Toy Model Dataset")
-        axs[0, 1].scatter(data[:, 0], data[:, 1])
-        axs[0, 1].scatter(centroids[:, 0], centroids[:, 1])
-        axs[0, 1].set_title("Initial Random Centroids")
-        unique_cluster_labels = np.unique(cluster_labels)
-        for i in unique_cluster_labels:
-            axs[1, 0].scatter(data[cluster_labels == i, 0],
-                                data[cluster_labels == i, 1],
-                                label = i)
-        axs[1, 0].set_title("First Grouping of Points to Centroids")
-
-    centroids_list = []
-    temp_centroids = centroids.copy()
-    centroids_list.append(temp_centroids)
+    #centroids_list = []
+    #temp_centroids = centroids.copy()
+    #centroids_list.append(temp_centroids)
 
 
     for iteration in range(max_iterations):
+        prev_centroids = centroids.copy()
         for k in range(n_clusters):
             points_in_cluster = data[cluster_labels == k]
             mean_vector = np.mean(points_in_cluster, axis=0)
             centroids[k] = mean_vector
 
-        temp_centroids = centroids.copy()
-        centroids_list.append(temp_centroids)
+        #temp_centroids = centroids.copy()
+        #centroids_list.append(temp_centroids)
         distances = get_distances_to_clusters(np.reshape(data, (n_samples, 1, dimensions)),
                                                 np.reshape(centroids, (1, n_clusters, dimensions)))
         cluster_labels = assign_points_to_clusters(distances)
@@ -134,37 +123,17 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
             plt.close()
 
 
-
-
-        centroid_difference = np.sum(np.abs(centroids_list[iteration] - centroids_list[iteration-1]))
+        centroid_difference = np.sum(np.abs(centroids - prev_centroids))
         if centroid_difference < tolerance:
             print(f'Converged at iteration: {iteration}')
+            print(f'Runtime: {time.time() - start_time} seconds')
 
-            if plot_results:
-                unique_cluster_labels = np.unique(cluster_labels)
-                for i in unique_cluster_labels:
-                    axs[1, 1].scatter(data[cluster_labels == i, 0],
-                                data[cluster_labels == i, 1],
-                                label = i)
+            return cluster_labels, centroids
 
-                axs[1, 1].set_title("Final Grouping")
-                fig.tight_layout()
-                plt.show()
-
-            return cluster_labels, centroids_list
-
-    if plot_results:
-        unique_cluster_labels = np.unique(cluster_labels)
-        for i in unique_cluster_labels:
-            axs[1, 1].scatter(data[cluster_labels == i, 0],
-                        data[cluster_labels == i, 1],
-                        label = i)
-
-        axs[1, 1].set_title("Final Grouping")
-        fig.tight_layout()
-        plt.show()
 
     print(f'Did not converge in {max_iterations} iterations')
+    print(f'Runtime: {time.time() - start_time} seconds')
+
     return cluster_labels, centroids_list
 
 
@@ -172,4 +141,4 @@ if __name__=='__main__':
     np.random.seed(2021)
     simple_data = generate_simple_clustering_dataset(n_points=1000, plotting=False)
     complicated_data = generate_complicated_clustering_dataset(n_points=1000, plotting=False)
-    k_means(complicated_data, n_clusters=8, plot_results=False, progression_plot=True)
+    k_means(complicated_data, n_clusters=8, progression_plot=True)

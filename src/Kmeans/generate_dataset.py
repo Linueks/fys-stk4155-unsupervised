@@ -29,12 +29,14 @@ def gaussian_points(dim=2, n_points=1000, mean_vector=np.array([0, 0]),
 
     mean_matrix = np.zeros(dim) + mean_vector
     covariance_matrix = np.eye(dim) * sample_variance
-    data = np.random.multivariate_normal(mean_matrix, covariance_matrix, n_points)
+    data = np.random.multivariate_normal(mean_matrix, covariance_matrix,
+                                    n_points)
     return data
 
 
 
-def generate_simple_clustering_dataset(dim=2, n_points=1000, plotting=True, return_data=True):
+def generate_simple_clustering_dataset(dim=2, n_points=1000, plotting=True,
+                                    return_data=True):
     """
     Toy model to illustrate k-means clustering
     """
