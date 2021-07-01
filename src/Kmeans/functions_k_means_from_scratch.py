@@ -5,6 +5,7 @@ readability.
 --------------------------------------------------------------------------------
 Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content. A lot like the
 """
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from generate_dataset import *
@@ -75,7 +76,7 @@ def assign_points_to_clusters(distances):
 
 
 
-def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8):
+def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
     """
     Naive implementation of the k-means clustering algorithm. A short summary of
     the algorithm is as follows: we randomly initialize k centroids / means.
@@ -109,6 +110,7 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8):
     # For each cluster we need to update the centroid by calculating new means
     # for all the data points in the cluster and repeat
     for iteration in range(max_iterations):
+        prev_centroids = centroids.copy()
         for k in range(n_clusters):
             # Here we find the mean for each centroid
             vector_mean = np.zeros(dimensions)
@@ -130,11 +132,11 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8):
         # we assign each point to a cluster
         cluster_labels = assign_points_to_clusters(distances)
 
-        centroid_difference = np.sum(np.abs(centroid_list[iteration] - centroid_list[iteration-1]))
+        centroid_difference = np.sum(np.abs(centroids - prev_centroids))
         if centroid_difference < tolerance:
             print(f'Converged at iteration: {iteration}')
             print(f'Runtime: {time.time() - start_time} seconds')
-            return cluster_labels, centroid_list
+            return cluster_labels, centroids
 
 
     print(f'Did not converge in {max_iterations} iterations')
@@ -145,5 +147,5 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8):
 
 if __name__=='__main__':
     np.random.seed(2021)
-    data = generate_clustering_dataset(dim=2, n_points=1000, plotting=False, return_data=True)
-    cluster_labels, centroids = k_means(data, max_iterations=20, plot_results=True)
+    data = generate_simple_clustering_dataset(dim=2, n_points=1000, plotting=False, return_data=True)
+    cluster_labels, centroids = k_means(data)

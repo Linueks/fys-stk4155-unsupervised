@@ -6,6 +6,7 @@ or from various libraries.
 --------------------------------------------------------------------------------
 Written Summer 2021 Linus Ekstrom for FYS-STK4155 course content
 """
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from generate_dataset import *
@@ -13,8 +14,7 @@ from generate_dataset import *
 
 
 
-def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
-            plot_results=False):
+def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
     """
     Naive implementation of the k-means clustering algorithm. A short summary of
     the algorithm is as follows: we randomly initialize k centroids / means.
@@ -39,7 +39,6 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 
     samples, dimensions = data.shape
     # we need to (randomly) choose initial centroids
-    print(samples, len(data))
     centroids = data[np.random.choice(samples, n_clusters, replace=False), :]
     # next we initialize an array to hold the distance from each centroid to
     # every point in our dataset
@@ -122,10 +121,14 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
         centroid_difference = np.sum(np.abs(centroids - prev_centroids))
 
         if centroid_difference < tolerance:
+            print(f'Converged at iteration: {iteration}')
+            print(f'Runtime: {time.time() - start_time} seconds')
 
             return cluster_labels, centroids
 
     print(f'Did not converge in {max_iterations} iterations')
+    print(f'Runtime: {time.time() - start_time} seconds')
+
     return cluster_labels, centroids
 
 
@@ -133,4 +136,4 @@ def k_means(data, n_clusters=4, max_iterations=20, tolerance=1e-8,
 if __name__=='__main__':
     np.random.seed(2021)
     data = generate_simple_clustering_dataset(dim=2, n_points=1000, plotting=False, return_data=True)
-    cluster_labels, centroids = k_means(data, max_iterations=100)
+    cluster_labels, centroids = k_means(data)

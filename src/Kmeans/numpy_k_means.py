@@ -5,6 +5,7 @@ loops that go over the number of samples as this grows very large. Using the
 cprofilev tool we can see which functions / loops are the biggest bottlenecks in
 our program and subsequently work to try to vectorize these.
 """
+import time
 import numpy as np
 import matplotlib.pyplot as plt
 from generate_dataset import *
@@ -69,8 +70,10 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
     n_samples, dimensions = data.shape
     centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
 
-    distances = get_distances_to_clusters(data.reshape((n_samples, 1, dimensions)),
-                                    centroids.reshape((1, n_clusters, dimensions)))
+    distances = get_distances_to_clusters(np.reshape(data,
+                                            (n_samples, 1, dimensions)),
+                                          np.reshape(centroids,
+                                            (1, n_clusters, dimensions)))
     cluster_labels = assign_points_to_clusters(distances)
 
     #centroids_list = []
@@ -87,8 +90,10 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
 
         #temp_centroids = centroids.copy()
         #centroids_list.append(temp_centroids)
-        distances = get_distances_to_clusters(np.reshape(data, (n_samples, 1, dimensions)),
-                                                np.reshape(centroids, (1, n_clusters, dimensions)))
+        distances = get_distances_to_clusters(np.reshape(data,
+                                                (n_samples, 1, dimensions)),
+                                              np.reshape(centroids,
+                                                (1, n_clusters, dimensions)))
         cluster_labels = assign_points_to_clusters(distances)
 
 
@@ -111,15 +116,15 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
                 ax.scatter(data[cluster_labels == i, 0],
                         data[cluster_labels == i, 1],
                         label = i,
-                        s = 8,
-                        alpha = 0.6)
+                        alpha = 0.2)
 
                 ax.scatter(centroids[:, 0], centroids[:, 1], c='black')
 
                 ax.set_title(f'Clusters at iteration {iteration}')
                 #fig.tight_layout()
                 #fig.legend()
-                plt.savefig(file_folder + f'c_image_at_it_{str(iteration).zfill(3)}.png')
+                plt.savefig(file_folder +
+                            f'c_image_at_it_{str(iteration).zfill(3)}.png')
             plt.close()
 
 
@@ -141,4 +146,4 @@ if __name__=='__main__':
     np.random.seed(2021)
     simple_data = generate_simple_clustering_dataset(n_points=1000, plotting=False)
     complicated_data = generate_complicated_clustering_dataset(n_points=1000, plotting=False)
-    k_means(complicated_data, n_clusters=8, progression_plot=True)
+    k_means(simple_data, n_clusters=4, progression_plot=False)
