@@ -139,7 +139,7 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8,
     print(f'Did not converge in {max_iterations} iterations')
     print(f'Runtime: {time.time() - start_time} seconds')
 
-    return cluster_labels, centroids_list
+    return cluster_labels, centroids
 
 
 if __name__=='__main__':

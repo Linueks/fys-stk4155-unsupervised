@@ -156,10 +156,11 @@ lack of googling beforehand) we generate it ourselves using Gaussians. First we
 import
 
 !bc pycod
-%matplotlib inline
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+from sklearn.cluster import KMeans
+import tensorflow as tf
 from IPython.display import display
 
 np.random.seed(2021)
@@ -224,10 +225,12 @@ Now that we are our, albeit very simple, dataset we are ready to start
 implementing the k-means algorithm.
 
 !bc pycod
+
 n_samples, dimensions = data.shape
 n_clusters = 4
 
 # we randomly initialize our centroids
+np.random.seed(2021)
 centroids = data[np.random.choice(n_samples, n_clusters, replace=False), :]
 distances = np.zeros((n_samples, n_clusters))
 
@@ -292,7 +295,6 @@ or a maximum amount of iterations.
 
 max_iterations = 100
 tolerance = 1e-8
-start_time = time.time()
 
 for iteration in range(max_iterations):
     prev_centroids = centroids.copy()
@@ -331,13 +333,10 @@ for iteration in range(max_iterations):
     centroid_difference = np.sum(np.abs(centroids - prev_centroids))
     if centroid_difference < tolerance:
         print(f'Converged at iteration {iteration}')
-        print(f'Runtime: {time.time() - start_time} seconds')
         break
 
     elif iteration == max_iterations:
         print(f'Did not converge in {max_iterations} iterations')
-        print(f'Runtime: {time.time() - start_time} seconds')
-
 !ec
 
 And thats it! We now have an extremely barebones, un-optimized k-means
@@ -359,12 +358,94 @@ ax.set_title("Final Result of K-means Clustering")
 plt.show()
 !ec
 
+And here is an animation of the progression of the algorithm.
+
+MOVIE: [clustering_example_images/simple_clustering.gif]
+
+The completed code, up to this point, is wrapped in a function for convenience
+later.
+
+!bc pycod
+def naive_kmeans(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
+    start_time = time.time()
+
+    n_samples, dimensions = data.shape
+    n_clusters = 4
+    #np.random.seed(2021)
+    centroids = data[np.random.choice(n_samples, n_clusters, replace=False), :]
+    distances = np.zeros((n_samples, n_clusters))
+
+    for k in range(n_clusters):
+        for n in range(n_samples):
+            dist = 0
+            for d in range(dimensions):
+                dist += np.abs(data[n, d] - centroids[k, d])**2
+                distances[n, k] = dist
+
+    cluster_labels = np.zeros(n_samples, dtype='int')
+
+    for n in range(n_samples):
+        smallest = 1e10
+        smallest_row_index = 1e10
+        for k in range(n_clusters):
+            if distances[n, k] < smallest:
+                smallest = distances[n, k]
+                smallest_row_index = k
+
+        cluster_labels[n] = smallest_row_index
+
+    for iteration in range(max_iterations):
+        prev_centroids = centroids.copy()
+        for k in range(n_clusters):
+            vector_mean = np.zeros(dimensions)
+            mean_divisor = 0
+            for n in range(n_samples):
+                if cluster_labels[n] == k:
+                    vector_mean += data[n, :]
+                    mean_divisor += 1
+
+            centroids[k, :] = vector_mean / mean_divisor
+
+        for k in range(n_clusters):
+            for n in range(n_samples):
+                dist = 0
+                for d in range(dimensions):
+                    dist += np.abs(data[n, d] - centroids[k, d])**2
+                    distances[n, k] = dist
+
+        for n in range(n_samples):
+            smallest = 1e10
+            smallest_row_index = 1e10
+            for k in range(n_clusters):
+                if distances[n, k] < smallest:
+                    smallest = distances[n, k]
+                    smallest_row_index = k
+
+            cluster_labels[n] = smallest_row_index
+
+        centroid_difference = np.sum(np.abs(centroids - prev_centroids))
+        if centroid_difference < tolerance:
+            print(f'Converged at iteration {iteration}')
+            print(f'Runtime: {time.time() - start_time} seconds')
+
+            return cluster_labels, centroids
+
+    print(f'Did not converge in {max_iterations} iterations')
+    print(f'Runtime: {time.time() - start_time} seconds')
+
+    return cluster_labels, centroids
+
+!ec
+
 Now there are a few glaring improvements to be done here. First of all is
 organizing things into functions for better readability. Second is getting rid
 of the small inefficiencies like manually calculating distances and argmin. And
 finally, we need to optimize for better run-time. It's like we always say: the
 best way of looping in Python is to not loop in Python. Let us tackle the first
-two improvements in one step.
+two improvements.
+
+=== Towards a More Numpythonic Code ===
+
 
 !bc pycod
 
@@ -433,13 +514,13 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
         centroid_list (list): list of centroids (np.array)
                               with dimensions (n_clusters x dim)
     """
-
-    samples, dimensions = data.shape
+    start_time = time.time()
+    n_samples, dimensions = data.shape
+    #np.random.seed(2021)
     centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
     distances = get_distances_to_clusters(data, centroids)
     cluster_labels = assign_points_to_clusters(distances)
 
-    start_time = time.time()
 
     for iteration in range(max_iterations):
         prev_centroids = centroids.copy()
@@ -468,15 +549,347 @@ def k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
 
     return cluster_labels, centroids
 
-
-# quirk of numpy / Jupyter need to set seed again
-np.random.seed(2021)
 cluster_labels, centroids = k_means(data)
 
 !ec
 
-_Note_: the start of the timing is after the random initialization, and first
-'cycle' of our algorithm. This is technically not the correct way to time it but
-due to this being in a Jupyter notebook and the way it is structured this way of
-comparing our algorithms will produce a more equal result. When timing code we
-should always encapsulate our whole computation block.
+Notice we added timing to our code. Although, the result of timing once will not
+be optimal, it can still give us hints about the order of magnitude of our
+subsequent improvements
+
+So we see an improvement from just switching to numpy's argmin function. There
+is a very nice tool (or category of tools) called profilers. These can be
+utilized to make clearer which improvements to our code we should care most
+about here is an "excellent source": "https://ipython-books.github.io/42-profiling-your-code-easily-with-cprofile-and-ipython/"
+on the topic. Even before optimizing we can understand which parts of our code
+will be taking the most of the run-time. It will be the longest Python loop,
+i.e. the loop over all the samples. Nonetheless, let us do some profiling!
+
+!bc pycod
+test_data = generate_simple_clustering_dataset(n_points=10000, plotting=False)
+%prun -l 10 cluster_labels, centroids = k_means(test_data)
+!ec
+
+Here we can see the reason for profiling. We now know for certain a lot can be
+gained just by vectorizing our distance function. Ideally we wish to perform
+most of our loops in numpy, i.e. C. To do this we need our array shapes to match
+and clever reshaping will let us do so.
+
+!bc pycod
+
+def np_get_distances_to_clusters(data, centroids):
+    """
+    Squared Euclidean distance between all data-points and every centroid. For
+    the function to work properly it needs data and centroids to be numpy
+    broadcastable. We sum along the dimension axis.
+    Inputs:
+        data (np.array): with dimensions (samples x 1 x dim)
+        centroids (np.array): with dimensions (1 x n_clusters x dim)
+
+    Returns:
+        distances (np.array): with dimensions (samples x n_clusters)
+    """
+
+    distances = np.sum(np.abs((data - centroids))**2, axis=2)
+    return distances
+
+def np_assign_points_to_clusters(distances):
+    """
+    Assigning each data-point to a cluster given an array distances containing
+    the squared Euclidean distance from every point to each centroid. We do
+    np.argmin along the cluster axis to find the closest cluster. Returns a
+    numpy array with corresponding labels.
+    Inputs:
+        distances (np.array): with dimensions (samples x n_clusters)
+
+    Returns:
+        cluster_labels (np.array): with dimensions (samples x None)
+    """
+    cluster_labels = np.argmin(distances, axis=1)
+    return cluster_labels
+
+
+def np_k_means(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
+    """
+    Numpythonic implementation of the k-means clusting algorithm.
+    Inputs:
+        data (np.array): with dimesions (n_samples x dim)
+        n_clusters (int): hyperparameter which depends on dataset
+        max_iterations (int): hyperparameter which depends on dataset
+        tolerance (float): convergence measure
+
+    Returns:
+        cluster_labels (np.array): with dimension (n_samples)
+        centroid_list (list): list of centroids (np.array)
+                              with dimensions (n_clusters x dim)
+    """
+    start_time = time.time()
+    n_samples, dimensions = data.shape
+    #np.random.seed(2021)
+    centroids = data[np.random.choice(len(data), n_clusters, replace=False), :]
+
+    distances = np_get_distances_to_clusters(np.reshape(data,
+                                            (n_samples, 1, dimensions)),
+                                          np.reshape(centroids,
+                                            (1, n_clusters, dimensions)))
+    cluster_labels = np_assign_points_to_clusters(distances)
+
+
+    for iteration in range(max_iterations):
+        prev_centroids = centroids.copy()
+        for k in range(n_clusters):
+            points_in_cluster = data[cluster_labels == k]
+            mean_vector = np.mean(points_in_cluster, axis=0)
+            centroids[k] = mean_vector
+
+        distances = np_get_distances_to_clusters(np.reshape(data,
+                                                (n_samples, 1, dimensions)),
+                                              np.reshape(centroids,
+                                                (1, n_clusters, dimensions)))
+        cluster_labels = np_assign_points_to_clusters(distances)
+
+        centroid_difference = np.sum(np.abs(centroids - prev_centroids))
+        if centroid_difference < tolerance:
+            print(f'Converged at iteration: {iteration}')
+            print(f'Runtime: {time.time() - start_time} seconds')
+
+            return cluster_labels, centroids
+
+    print(f'Did not converge in {max_iterations} iterations')
+    print(f'Runtime: {time.time() - start_time} seconds')
+
+    return cluster_labels, centroids
+!ec
+
+When working towards becoming a data scientist using Python this last step is
+arguably one of the most important. Thinking of ways to avoid explicitly looping
+by adding dimensions to our arrays in such a way that they become broadcastable
+using numpy (also tensorflow and many others). Let us take a look at our the
+fruits of our labor.
+
+!bc pycod
+cluster_labels, centroids = np_k_means(data)
+!ec
+
+So our new code is around _two orders of magnitude_ faster on this limited test
+example!
+
+So let us recap what we have learned. The $k$-means algorithm works by
+iteratively updating $k$ means according to the squared Euclidean distance to
+our data points. One way of thinking about it is in terms of compressing the
+original high dimensional data to a lower dimension. The process of which,
+*hopefully*, captures something about the structure of the original data.
+Phrased according to our example, we start of with 4000 '*groups*' which we
+'compress' to just four '*groups*'. We have first hand seen the unreasonable
+inefficiency of pure Python loops and learned to think about loops as just
+another way of looking at the dimensionality of our data.
+
+=== Onto Bigger and Better Things ===
+As is often the case, someone has already done everything we have just done
+(often but not always better). Let us take a look at "scikit-learn's
+implementation": "https://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html".
+We define a wrapper function for timing and benchmarking purposes later.
+
+!bc pycod
+def skl_kmeans(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
+    start_time = time.time()
+    #np.random.seed(2021)
+    kmeans = KMeans(n_clusters=n_clusters, max_iter=max_iterations,
+                tol=tolerance).fit(data)
+
+    print(f'Converged at iteration {kmeans.n_iter_}')
+    print(f'Runtime: {time.time() - start_time} seconds')
+
+    return kmeans.labels_, kmeans.cluster_centers_
+!ec
+
+Now let us get an idea how we hold up against the professionals.
+
+!bc pycod
+cluster_labels, centroids = skl_kmeans(data)
+!ec
+
+Here we get another important lesson, there is a cost for convenience. In
+addition, there might be various tests and other things enforcing robustness in
+the sklearn implementation which are not present in our numpy code. However,
+the result still speaks for themselves.
+
+The final implementation we will look at is one in tensorflow. Now while
+tensorflow is not strictly meant for things like this. It is natively highly
+parallelized with functionality out of the box to run on GPU's. The following
+code is based on, and adapted from this "blog-post": "https://www.altoros.com/blog/using-k-means-clustering-in-tensorflow/"
+
+!bc pycod
+
+def tf_kmeans(data, n_clusters=4, max_iterations=100, tolerance=1e-8):
+    start_time = time.time()
+    data = tf.constant(data)
+    centroids = tf.constant(tf.slice(tf.random.shuffle(data),
+                              begin=[0, 0],
+                              size=[n_clusters, -1]))
+
+    @tf.function
+    def update_centroids(data, centroids):
+        data_expanded = tf.expand_dims(data, 0)
+        centroids_expanded = tf.expand_dims(centroids, 1)
+
+        distances = tf.reduce_sum(
+                        tf.square(
+                            tf.subtract(data_expanded, centroids_expanded)), 2)
+        cluster_labels = tf.argmin(distances, 0)
+        means = []
+
+        for k in range(n_clusters):
+            temp = tf.reshape(tf.where(tf.equal(cluster_labels, k)),
+                      shape=[1, -1])
+            temp = tf.gather(data, temp, validate_indices=None)
+            temp = tf.reduce_mean(temp, axis=[1])
+            means.append(temp)
+            updated_centroids = tf.concat(means, 0)
+
+        return cluster_labels, updated_centroids
+
+    for iteration in range(max_iterations):
+        prev_centroids = tf.identity(centroids)
+        cluster_labels, centroids = update_centroids(data, centroids)
+
+        if tf.reduce_sum(
+            tf.abs(
+                tf.subtract(prev_centroids, centroids))) < tolerance:
+
+            print(f'Converged at iteration {iteration}')
+            print(f'Runtime: {time.time() - start_time} seconds')
+
+            return cluster_labels, centroids
+
+    print(f'Did not converge in {max_iterations} iterations')
+    print(f'Runtime: {time.time() - start_time} seconds')
+    return cluster_labels, centroids
+!ec
+
+!bc pycod
+
+cluster_labels, centroids = tf_kmeans(data)
+
+!ec
+
+_Note_ tensorflow has a different seed than numpy, so direct comparison of just
+one run of the code (bad practice) is not doable. Also notice the @tf.function.
+This was introduced in tensorflow 2 and signifies that the function is
+'compiled'. We will look at benchmarking all our methods next.
+
+But first we plot or result to see we get something which looks correct. We also
+take this opportunity to define a function for our plotting.
+
+!bc pycod
+
+def make_plot(data, cluster_labels, centroids, method_string):
+    """
+    Simple plot function
+
+    Inputs:
+        data (np.array like) with dimensions: (n_samples x dim)
+        cluster_labels (np.array like) with dimensions: (n_samples)
+        centroids (np.array like) with dimensions: (n_clusters x dim)
+
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    unique_cluster_labels = np.unique(cluster_labels)
+    for i in unique_cluster_labels:
+        ax.scatter(data[cluster_labels == i, 0],
+                   data[cluster_labels == i, 1],
+                   label = i,
+                   alpha = 0.2)
+        ax.scatter(centroids[:, 0], centroids[:, 1], c='black')
+
+    ax.set_title(f"K Means Clustering using {method_string} Method")
+
+    plt.show()
+
+!ec
+
+!bc pycod
+
+make_plot(data, cluster_labels, centroids, "Tensorflow")
+
+!ec
+
+Looks good! To summarize, we have now seen how to code the most basic Python
+version, how to optimize and use a profiler, we ended up with a really quick
+numpythonic version of our code. Then we looked at two implementations of the
+$k$ means algorithm using higher level libraries scikit-learn and tensorflow.
+
+
+===== Benchmarking and Testing Our Code =====
+Now that we have developed our code, the next logical step is testing how well
+our different implementations fare against each other in various tests. We start
+with doing a Monte Carlo run over all our methods to produce numerical estimates
+for the performance of our implementations.
+
+!bc pycod
+monte_carlo_cycles = 10
+n_data_points = np.logspace(10, 100, num=2)
+method_dict = {
+    'Python': naive_kmeans,
+    'Numpy': np_k_means,
+    'Scikit-Learn': skl_kmeans,
+    'Tensorflow': tf_kmeans
+}
+times_array = np.zeros((4, len(n_data_points), monte_carlo_cycles))
+
+for i, (method_string, method) in enumerate(method_dict.items()):
+    for j, n_points in enumerate(n_data_points):
+        data = generate_simple_clustering_dataset(n_points=n_points,
+                                                  plotting=False)
+
+        for k in range(monte_carlo_cycles):
+            toc = time.time()
+            cluster_labels, centroids = method(data)
+            tic = time.time() - toc
+            times_array[i, j, k] = tic
+
+!ec
+
+!bc pycod
+
+means = np.mean(times_array, axis=2)
+std = np.std(times_array, axis=2)
+
+fig = plt.figure()
+ax = fig.add_subplot()
+
+for i, method_string in enumerate(method_dict):
+    print(i, method_string)
+    ax.errorbar(n_data_points, means[i, :], yerr=std[i, :],
+                label=method_string,
+                markersize=10,
+                capsize=5)
+
+ax.set_xlabel('$n$ data points')
+ax.set_ylabel('$t$ seconds')
+fig.legend()
+plt.show()
+
+!ec
+
+The naive Python implementation is too slow to see the nuance in the others, we
+plot again without it
+
+!bc pycod
+fig = plt.figure()
+ax = fig.add_subplot()
+
+# this turned out a bit hacky
+for i, method_string in enumerate(list(method_dict.keys())[1:]):
+    ax.errorbar(n_data_points, means[i+1, :], yerr=std[i+1, :],
+                label=method_string,
+                markersize=10,
+                capsize=5)
+
+ax.set_xlabel('$n$ data points')
+ax.set_ylabel('$t$ seconds')
+fig.legend()
+plt.show()
+
+!ec
