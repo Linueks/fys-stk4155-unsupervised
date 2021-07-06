@@ -138,7 +138,11 @@ div.toc p,a {
               ('Benchmarking and Testing Our Code',
                2,
                None,
-               'benchmarking-and-testing-our-code')]}
+               'benchmarking-and-testing-our-code'),
+              ('Vector Quantization: Actual Example Use Case',
+               2,
+               None,
+               'vector-quantization-actual-example-use-case')]}
 end of tocinfo -->
 
 <body>
@@ -325,11 +329,12 @@ import
     <div class="inner_cell">
       <div class="input_area">
         <div class="highlight" style="background: #f8f8f8">
-  <pre style="line-height: 125%;"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+  <pre style="line-height: 125%;"><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">time</span>
 <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
-<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">time</span>
-<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sklearn.cluster</span> <span style="color: #008000; font-weight: bold">import</span> KMeans
 <span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">tensorflow</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">tf</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">matplotlib</span> <span style="color: #008000; font-weight: bold">import</span> image
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sklearn.cluster</span> <span style="color: #008000; font-weight: bold">import</span> KMeans
 <span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">IPython.display</span> <span style="color: #008000; font-weight: bold">import</span> display
 
 np<span style="color: #666666">.</span>random<span style="color: #666666">.</span>seed(<span style="color: #666666">2021</span>)
@@ -1425,6 +1430,145 @@ plt<span style="color: #666666">.</span>show()
   </div>
 </div>
 
+
+<b>THERE NEEDS TO BE A DISCUSSION OF RESULTS HERE WHEN I PRODUCED THEM</b>
+
+<b>POTENTIALLY NEED TO DO SOMETHING LIKE THE SKL CLUSTERING EXAMPLE</b>
+<b>THAT COULD LEAD TO DISCUSSION OF STRENGTHS AND WEAKNESSES OF METHOD</b>
+<h2 id="vector-quantization-actual-example-use-case">Vector Quantization: Actual Example Use Case </h2>
+<p>Before we wrap up this topic we will consider the topic of <b>vector quantization</b>
+. It is a technique which comes from signal processing theory. And is a basis
+for some kinds of lossy compression. This is obvious because the \( k \)-means
+algorithm is non-injective (many-to-one). Take notice of the fact that while the
+\( k \)-means algorithm is an example of a vector quantization, there also exists
+other vector quantization algorithms. We will be doing compression on an image,
+but in principle this method can be applied to any form of data. We leave it to
+the interested reader to try doing compression on something else.
+</p>
+
+<p>We load in our image. And do some array manipulation to make the image size more
+manageable. The way this will work is our centroids will represent colors, and
+clustering means that we 'force' pixels that originally were not that color to
+'turn' that color. Some cool art can probably be made using this. Do not
+hesitate to try for yourself on another image!!
+</p>
+
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="cell border-box-sizing code_cell rendered">
+  <div class="input">
+    <div class="inner_cell">
+      <div class="input_area">
+        <div class="highlight" style="background: #f8f8f8">
+  <pre style="line-height: 125%;">example_image <span style="color: #666666">=</span> image<span style="color: #666666">.</span>imread(<span style="color: #BA2121">&#39;clustering_example_images/some_image.jpg&#39;</span>) <span style="color: #666666">/</span> <span style="color: #666666">255</span>
+<span style="color: #008000">print</span>(<span style="color: #BA2121">f&#39;Initial shape: </span><span style="color: #BB6688; font-weight: bold">{</span>example_image<span style="color: #666666">.</span>shape<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121">&#39;</span>)
+x, y, rgb <span style="color: #666666">=</span> example_image<span style="color: #666666">.</span>shape
+example_image <span style="color: #666666">=</span> example_image[<span style="color: #666666">0</span>:<span style="color: #666666">500</span>, <span style="color: #666666">200</span>:<span style="color: #666666">800</span>, :]
+reshaped_image <span style="color: #666666">=</span> np<span style="color: #666666">.</span>reshape(example_image, (<span style="color: #666666">500</span> <span style="color: #666666">*</span> <span style="color: #666666">600</span>, rgb))
+<span style="color: #008000">print</span>(<span style="color: #BA2121">f&#39;New shape: </span><span style="color: #BB6688; font-weight: bold">{</span>reshaped_image<span style="color: #666666">.</span>shape<span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121">&#39;</span>)
+</pre>
+</div>
+      </div>
+    </div>
+  </div>
+  <div class="output_wrapper">
+    <div class="output">
+      <div class="output_area">
+        <div class="output_subarea output_stream output_stdout output_text">          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<br/><br/>
+<center>
+<p><img src="clustering_example_images/some_image.jpg" ></p>
+</center>
+<br/><br/>
+
+<p>Let's first try clustering with different numbers of centroids and look at the
+effect. We will use the numpy implementation because it was the fastest.
+</p>
+
+
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="cell border-box-sizing code_cell rendered">
+  <div class="input">
+    <div class="inner_cell">
+      <div class="input_area">
+        <div class="highlight" style="background: #f8f8f8">
+  <pre style="line-height: 125%;">cluster_labels_4, centroids_4 <span style="color: #666666">=</span> np_k_means(reshaped_image, n_clusters<span style="color: #666666">=4</span>,
+                                            tolerance<span style="color: #666666">=1e-4</span>)
+cluster_labels_6, centroids_6 <span style="color: #666666">=</span> np_k_means(reshaped_image, n_clusters<span style="color: #666666">=6</span>,
+                                            tolerance<span style="color: #666666">=1e-4</span>)
+cluster_labels_8, centroids_8 <span style="color: #666666">=</span> np_k_means(reshaped_image, n_clusters<span style="color: #666666">=8</span>,
+                                            tolerance<span style="color: #666666">=1e-4</span>)
+
+compressed_image_4 <span style="color: #666666">=</span> reshaped_image<span style="color: #666666">.</span>copy()
+compressed_image_6 <span style="color: #666666">=</span> reshaped_image<span style="color: #666666">.</span>copy()
+compressed_image_8 <span style="color: #666666">=</span> reshaped_image<span style="color: #666666">.</span>copy()
+
+<span style="color: #008000; font-weight: bold">for</span> i <span style="color: #AA22FF; font-weight: bold">in</span> <span style="color: #008000">range</span>(<span style="color: #008000">len</span>(reshaped_image)):
+    compressed_image_4[i] <span style="color: #666666">=</span> centroids_4[cluster_labels_4[i]]
+    compressed_image_6[i] <span style="color: #666666">=</span> centroids_6[cluster_labels_6[i]]
+    compressed_image_8[i] <span style="color: #666666">=</span> centroids_8[cluster_labels_8[i]]
+</pre>
+</div>
+      </div>
+    </div>
+  </div>
+  <div class="output_wrapper">
+    <div class="output">
+      <div class="output_area">
+        <div class="output_subarea output_stream output_stdout output_text">          
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- code=python (!bc pycod) typeset with pygments style "default" -->
+<div class="cell border-box-sizing code_cell rendered">
+  <div class="input">
+    <div class="inner_cell">
+      <div class="input_area">
+        <div class="highlight" style="background: #f8f8f8">
+  <pre style="line-height: 125%;">fig, ax <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>subplots(<span style="color: #666666">2</span>, <span style="color: #666666">2</span>, figsize<span style="color: #666666">=</span>(<span style="color: #666666">8</span>, <span style="color: #666666">5</span>))
+ax[<span style="color: #666666">0</span>, <span style="color: #666666">0</span>]<span style="color: #666666">.</span>imshow(example_image)
+ax[<span style="color: #666666">0</span>, <span style="color: #666666">0</span>]<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;Original&#39;</span>)
+ax[<span style="color: #666666">0</span>, <span style="color: #666666">0</span>]<span style="color: #666666">.</span>axis(<span style="color: #BA2121">&#39;off&#39;</span>)
+
+ax[<span style="color: #666666">0</span>, <span style="color: #666666">1</span>]<span style="color: #666666">.</span>imshow(np<span style="color: #666666">.</span>reshape(compressed_image_4, (<span style="color: #666666">500</span>, <span style="color: #666666">600</span>, <span style="color: #666666">3</span>)))
+ax[<span style="color: #666666">0</span>, <span style="color: #666666">1</span>]<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;$n_c = 4$&#39;</span>)
+ax[<span style="color: #666666">0</span>, <span style="color: #666666">1</span>]<span style="color: #666666">.</span>axis(<span style="color: #BA2121">&#39;off&#39;</span>)
+
+ax[<span style="color: #666666">1</span>, <span style="color: #666666">0</span>]<span style="color: #666666">.</span>imshow(np<span style="color: #666666">.</span>reshape(compressed_image_6, (<span style="color: #666666">500</span>, <span style="color: #666666">600</span>, <span style="color: #666666">3</span>)))
+ax[<span style="color: #666666">1</span>, <span style="color: #666666">0</span>]<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;$n_c = 6$&#39;</span>)
+ax[<span style="color: #666666">1</span>, <span style="color: #666666">0</span>]<span style="color: #666666">.</span>axis(<span style="color: #BA2121">&#39;off&#39;</span>)
+
+ax[<span style="color: #666666">1</span>, <span style="color: #666666">1</span>]<span style="color: #666666">.</span>imshow(np<span style="color: #666666">.</span>reshape(compressed_image_8, (<span style="color: #666666">500</span>, <span style="color: #666666">600</span>, <span style="color: #666666">3</span>)))
+ax[<span style="color: #666666">1</span>, <span style="color: #666666">1</span>]<span style="color: #666666">.</span>set_title(<span style="color: #BA2121">&#39;$n_c = 8$&#39;</span>)
+ax[<span style="color: #666666">1</span>, <span style="color: #666666">1</span>]<span style="color: #666666">.</span>axis(<span style="color: #BA2121">&#39;off&#39;</span>)
+
+plt<span style="color: #666666">.</span>show()
+</pre>
+</div>
+      </div>
+    </div>
+  </div>
+  <div class="output_wrapper">
+    <div class="output">
+      <div class="output_area">
+        <div class="output_subarea output_stream output_stdout output_text">          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>And we have randomly stumbled upon how stencils for spray painting can be made.
+Definitely a lot of potential for cool art here!
+</p>
 <!-- ------------------- end of main content --------------- -->
 </body>
 </html>

@@ -156,11 +156,12 @@ lack of googling beforehand) we generate it ourselves using Gaussians. First we
 import
 
 !bc pycod
-import matplotlib.pyplot as plt
-import numpy as np
 import time
-from sklearn.cluster import KMeans
+import numpy as np
 import tensorflow as tf
+from matplotlib import image
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
 from IPython.display import display
 
 np.random.seed(2021)
@@ -893,3 +894,81 @@ fig.legend()
 plt.show()
 
 !ec
+
+_THERE NEEDS TO BE A DISCUSSION OF RESULTS HERE WHEN I PRODUCED THEM_
+
+_POTENTIALLY NEED TO DO SOMETHING LIKE THE SKL CLUSTERING EXAMPLE_
+_THAT COULD LEAD TO DISCUSSION OF STRENGTHS AND WEAKNESSES OF METHOD_
+
+
+===== Vector Quantization: Actual Example Use Case =====
+Before we wrap up this topic we will consider the topic of _vector quantization_
+. It is a technique which comes from signal processing theory. And is a basis
+for some kinds of lossy compression. This is obvious because the $k$-means
+algorithm is non-injective (many-to-one). Take notice of the fact that while the
+$k$-means algorithm is an example of a vector quantization, there also exists
+other vector quantization algorithms. We will be doing compression on an image,
+but in principle this method can be applied to any form of data. We leave it to
+the interested reader to try doing compression on something else.
+
+We load in our image. And do some array manipulation to make the image size more
+manageable. The way this will work is our centroids will represent colors, and
+clustering means that we 'force' pixels that originally were not that color to
+'turn' that color. Some cool art can probably be made using this. Do not
+hesitate to try for yourself on another image!!
+
+!bc pycod
+example_image = image.imread('clustering_example_images/some_image.jpg') / 255
+print(f'Initial shape: {example_image.shape}')
+x, y, rgb = example_image.shape
+example_image = example_image[0:500, 200:800, :]
+reshaped_image = np.reshape(example_image, (500 * 600, rgb))
+print(f'New shape: {reshaped_image.shape}')
+!ec
+
+FIGURE: [clustering_example_images/some_image.jpg]
+
+Let's first try clustering with different numbers of centroids and look at the
+effect. We will use the numpy implementation because it was the fastest.
+
+!bc pycod
+cluster_labels_4, centroids_4 = np_k_means(reshaped_image, n_clusters=4,
+                                            tolerance=1e-4)
+cluster_labels_6, centroids_6 = np_k_means(reshaped_image, n_clusters=6,
+                                            tolerance=1e-4)
+cluster_labels_8, centroids_8 = np_k_means(reshaped_image, n_clusters=8,
+                                            tolerance=1e-4)
+
+compressed_image_4 = reshaped_image.copy()
+compressed_image_6 = reshaped_image.copy()
+compressed_image_8 = reshaped_image.copy()
+
+for i in range(len(reshaped_image)):
+    compressed_image_4[i] = centroids_4[cluster_labels_4[i]]
+    compressed_image_6[i] = centroids_6[cluster_labels_6[i]]
+    compressed_image_8[i] = centroids_8[cluster_labels_8[i]]
+
+!ec
+
+!bc pycod
+fig, ax = plt.subplots(2, 2, figsize=(8, 5))
+ax[0, 0].imshow(example_image)
+ax[0, 0].set_title('Original')
+ax[0, 0].axis('off')
+
+ax[0, 1].imshow(np.reshape(compressed_image_4, (500, 600, 3)))
+ax[0, 1].set_title('$n_c = 4$')
+ax[0, 1].axis('off')
+
+ax[1, 0].imshow(np.reshape(compressed_image_6, (500, 600, 3)))
+ax[1, 0].set_title('$n_c = 6$')
+ax[1, 0].axis('off')
+
+ax[1, 1].imshow(np.reshape(compressed_image_8, (500, 600, 3)))
+ax[1, 1].set_title('$n_c = 8$')
+ax[1, 1].axis('off')
+
+plt.show()
+!ec
+And we have randomly stumbled upon how stencils for spray painting can be made.
+Definitely a lot of potential for cool art here!
